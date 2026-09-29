@@ -59,7 +59,7 @@ SaaS / Hybrid Storage — reconciliation 2026-09-29:
 - [x] Базовая миграция local → cloud (upload/link/import).
 - [x] Deep link `/share/:token`: read-only viewer без autosave.
 - [ ] Fork/copy shared → active storage; сейчас Fork импортирует только в local IndexedDB.
-- [ ] Добавить GitHub Actions CI: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
+- [x] Добавить GitHub Actions CI: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
 ---
 
