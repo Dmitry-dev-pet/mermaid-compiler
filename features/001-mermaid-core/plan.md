@@ -58,7 +58,7 @@ SaaS / Hybrid Storage — reconciled 2026-09-29:
 38. [x] Implement basic migration flow local → cloud (upload/link/import path via `useCloudControlPlane`).
 39. [x] Add share deep-link entry (`/share/:token`) as read-only mode without autosave.
 40. [ ] Finish Fork flow so shared projects copy into the user's active storage; current implementation forks to local IndexedDB only.
-41. [ ] Add application CI on pull requests and `main`: typecheck, lint, tests, build.
+41. [x] Add application CI on pull requests and `main`: typecheck, lint, tests, build.
 
 ---
 
