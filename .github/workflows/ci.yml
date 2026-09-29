@@ -38,13 +38,41 @@ jobs:
         run: npm --prefix diagram-compiler ci
 
       - name: Typecheck
+        id: typecheck
+        continue-on-error: true
         run: npm run typecheck
 
       - name: Lint
+        id: lint
+        continue-on-error: true
         run: npm run lint
 
       - name: Test
+        id: test
+        continue-on-error: true
         run: npm test
 
       - name: Build
+        id: build
+        continue-on-error: true
         run: npm run build
+
+      - name: Quality gate
+        if: always()
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          echo "typecheck=${TYPECHECK_OUTCOME}"
+          echo "lint=${LINT_OUTCOME}"
+          echo "test=${TEST_OUTCOME}"
+          echo "build=${BUILD_OUTCOME}"
+
+          if [ "${TYPECHECK_OUTCOME}" != "success" ] || \
+             [ "${LINT_OUTCOME}" != "success" ] || \
+             [ "${TEST_OUTCOME}" != "success" ] || \
+             [ "${BUILD_OUTCOME}" != "success" ]; then
+            exit 1
+          fi
