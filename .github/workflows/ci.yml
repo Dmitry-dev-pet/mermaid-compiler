@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            diagram-compiler/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install app dependencies
+        run: npm --prefix diagram-compiler ci
+
+      - name: Typecheck
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck
+
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: npm test
+
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Quality gate
+        if: always()
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          echo "typecheck=${TYPECHECK_OUTCOME}"
+          echo "lint=${LINT_OUTCOME}"
+          echo "test=${TEST_OUTCOME}"
+          echo "build=${BUILD_OUTCOME}"
+
+          if [ "${TYPECHECK_OUTCOME}" != "success" ] || \
+             [ "${LINT_OUTCOME}" != "success" ] || \
+             [ "${TEST_OUTCOME}" != "success" ] || \
+             [ "${BUILD_OUTCOME}" != "success" ]; then
+            exit 1
+          fi

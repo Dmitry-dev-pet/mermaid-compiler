@@ -157,13 +157,15 @@ UI (Build Docs):
   - Auth (email/OAuth).
   - Таблица `projects` с полем `blob` (ciphertext или plaintext).
   - Optimistic concurrency через `version`.
-  - Share-link viewer/editor через Edge Functions.
+  - Share-link viewer/editor через server-side share API.
 - **BYO Supabase provider**:
   - Настройка `SUPABASE_URL` + `ANON_KEY`.
-  - Та же схема/Edge Functions (или минимальный REST контракт).
+  - Собственная auth-сессия пользователя для выбранного BYO instance.
+  - Та же схема/контракт хранения, что и для hosted режима.
 - **E2EE**:
   - Клиентское шифрование `AES-GCM`.
   - Key management через passphrase (KDF) + wrapped vault key.
+  - Активный cloud provider должен реально использовать encrypted wrapper.
   - Share-link содержит секрет ключа в `#fragment` URL (сервер не получает ключ).
 - **Конфликты**:
   - `put` с `baseVersion` и 409 при конфликте.
@@ -175,46 +177,89 @@ UI (Build Docs):
 - Строгая типизация, без `any`.
 - UI в hooks, компоненты остаются презентационными.
 
+### Reconciliation 2026-09-29
+
+Проверка текущего `main` показала, что документация отставала от реализации. Ниже зафиксирован фактический статус, который нужно использовать как исходную точку дальнейшей разработки.
+
+Реально реализовано:
+
+- интерфейс `StorageProvider`, local provider и hosted/BYO Supabase providers;
+- project bundle export/import и backup UI;
+- hosted Supabase CRUD + optimistic versioning;
+- `AuthContext` с hosted Supabase OAuth и реактивной сессией;
+- режимы `local | cloud_hosted | cloud_byo` в UI;
+- ручной cloud sync/import и migration local → cloud через `useCloudControlPlane`;
+- route `/share/:token`, read-only `ShareViewer` и Fork в новую локальную сессию;
+- server-side share API с проверкой `viewer/editor` permission и 409 при конфликте;
+- криптографические primitives и `createEncryptedProvider()`.
+
+Не завершено:
+
+- `cloud_byo` имеет собственный Supabase client и требует `client.auth.getUser()`, но отдельный BYO login/session flow не подключён к UI;
+- active project/history остаются local-first (IndexedDB), а cloud подключён отдельным control plane. Полноценной dynamic storage factory, которая подменяет основной `StorageProvider`, нет;
+- `createEncryptedProvider()` не подключён к активному cloud control plane; реальные hosted/BYO providers объявляют `e2ee: false`;
+- share-link не переносит E2EE key через `#fragment`, `wrapped_project_key` при создании ссылки не используется;
+- `ShareViewer` не реализует editor UX даже для ссылки с permission=`editor`;
+- cloud conflict detection существует, но UI разрешения конфликта (overwrite / open cloud / save copy) отсутствует;
+- Fork из share viewer всегда импортирует проект локально, а не в выбранный active storage.
+
 ---
 
 ## SaaS-трансформация: Hybrid Storage Architecture (в работе)
 
 Цель: приложение перестаёт быть только локальным редактором и становится клиентом платформы с гибридным хранением и шарингом.
 
-### Архитектурные блоки (C4 / component-level)
+### Текущее состояние
+
+Сейчас основным хранилищем проекта остаются `HistorySession`/IndexedDB. Cloud-операции выполняются отдельно через `useCloudControlPlane`:
+
+```text
+History / IndexedDB
+        ↓
+   Studio project
+        ↓
+useCloudControlPlane
+        ↓
+Hosted/BYO Supabase
+```
+
+Это рабочий промежуточный этап, но он **не равен** целевой Dynamic Storage Factory ниже.
+
+### Целевая архитектура (C4 / component-level)
 
 A. **Auth Context (слой идентификации)**
-- Глобальный синглтон, который держит состояние сессии пользователя.
-- Инициализирует `SupabaseClient` (hosted или BYO в зависимости от режима).
-- Реактивно обновляет `user/session` при перезагрузке/смене вкладок.
-- Методы: `loginWithGitHub()`, `logout()`.
-- Используется UI (Header) и Storage layer (для RLS / прав доступа).
+- Hosted режим: глобальный `AuthContext` держит реактивную Supabase-сессию и OAuth login/logout.
+- BYO режим: должен иметь auth/session для выбранного BYO client, а не зависеть от hosted client.
+- Storage layer использует auth соответствующего активного provider для RLS/прав доступа.
 
 B. **Dynamic Storage Factory (слой данных)**
-- Стратегия: активный `StorageProvider` выбирается динамически, с возможностью горячего переключения.
+- Активный `StorageProvider` выбирается динамически и становится единым storage backend для orchestration.
 - Режимы:
   - `local` → `createLocalProvider()` (IndexedDB/History).
-  - `cloud_hosted` → `createSupabaseHostedProvider()` (Supabase по `VITE_SUPABASE_*`).
-  - `cloud_byo` → `createSupabaseByoProvider()` (Supabase по конфигу пользователя).
-- Критично: миграция `local → cloud` (initial sync/upsert) сохраняет стабильные project IDs/UUID и консистентность ревизий.
+  - `cloud_hosted` → `createSupabaseHostedProvider()`.
+  - `cloud_byo` → `createSupabaseByoProvider()`.
+- E2EE включается wrapper-ом над выбранным cloud provider, а не отдельным неиспользуемым utility.
+- Переключение provider и migration должны сохранять project IDs/UUID и консистентность ревизий.
 
 C. **Route Guard & Deep Linking (слой входа)**
-- Приложение должно корректно стартовать в разных режимах по URL:
-  - Default Mode (`/`): полный редактор, загрузка последнего проекта из активного storage.
-  - Share Mode (`/share/:token`): read-only просмотр расшаренного проекта (без autosave/локального состояния).
-    - Кнопка `Fork / Copy to my account` создаёт копию проекта в активном storage пользователя.
+- Default Mode (`/`): полный редактор, загрузка проекта из активного storage.
+- Share Mode (`/share/:token`): read-only viewer по умолчанию, без autosave/локального состояния.
+- Editor share: отдельный разрешённый flow для `permission=editor` с optimistic concurrency.
+- `Fork / Copy to my account` создаёт копию проекта в активном storage пользователя.
 
 ### Потоки (data flow)
 
 1) Login:
-- User нажимает Login → OAuth → возврат в приложение → AuthContext обновляет user.
-- StorageFactory видит user и (если выбран cloud) поднимает cloud provider.
-- UI предлагает «слить» локальные проекты в облако (migration/sync).
+- User нажимает Login → OAuth → возврат в приложение → auth state обновляется.
+- StorageFactory выбирает provider согласно `storageMode`.
+- При переходе local → cloud UI предлагает initial migration/sync.
 
 2) Open by share link:
-- `/share/:token` → включается `readOnly`.
-- Данные берутся через `fetchShared(token)` (анонимный доступ через server-side share API/edge function).
-- UI скрывает/блокирует действия сохранения; доступен `Fork`.
+- `/share/:token` → загрузка через `fetchShared(token)`.
+- Viewer permission → read-only.
+- Editor permission → редактирование только после явной активации editor flow.
+- E2EE share decrypts client-side using key material from URL fragment.
+- `Fork` создаёт независимую копию в active storage.
 
 ## Constraints
 
@@ -239,4 +284,4 @@ C. **Route Guard & Deep Linking (слой входа)**
 
 ---
 
-Обновлено: 2026-01-23.
+Обновлено: 2026-09-29.
