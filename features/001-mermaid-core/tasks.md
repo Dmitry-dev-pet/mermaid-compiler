@@ -39,27 +39,28 @@
 
 ---
 
-Storage Providers (2026-01-25):
+Storage Providers — reconciliation 2026-09-29:
 
 - [x] Определить интерфейс провайдера хранения + capabilities (local/hosted/byo).
 - [x] Реализовать bundle проекта (session + steps + revisions) и формат бэкапа.
 - [x] Добавить UI Backup (Export/Import) в Projects menu.
 - [x] Реализовать hosted Supabase provider (projects table + optimistic version).
-- [x] Реализовать BYO Supabase provider (конфиг + проверка схемы).
-- [x] Добавить E2EE слой (passphrase, KDF, AES-GCM, wrapped vault key).
-- [x] Реализовать share links (viewer/editor) через Edge Functions.
-- [x] Добавить UX конфликтов (overwrite/open cloud/save copy).
+- [ ] BYO Supabase: добавить собственный auth/session flow; текущий provider/config/schema требуют authenticated user, но UI использует hosted `AuthContext`.
+- [ ] E2EE: подключить `createEncryptedProvider()` к активному hosted/BYO cloud flow; crypto primitives уже есть.
+- [ ] Share: довести viewer/editor UX и E2EE key-in-fragment; API и read-only viewer уже есть.
+- [ ] Conflicts: добавить реальный UX overwrite / open cloud / save copy для `StorageConflictError`.
 
 ---
 
-SaaS / Hybrid Storage (2026-01-29):
+SaaS / Hybrid Storage — reconciliation 2026-09-29:
 
-- [ ] Добавить AuthContext (Supabase OAuth + reactive session).
-- [ ] Добавить dynamic storage factory (local/hosted/byo) и настройку активного режима.
-- [ ] Реализовать миграцию local → cloud (initial sync/upsert).
-- [ ] Deep link `/share/:token`: read-only режим без autosave/локального стейта.
-- [ ] Fork/copy shared → user storage.
+- [x] Hosted `AuthContext`: Supabase OAuth + reactive session.
+- [ ] Dynamic storage factory: project orchestration всё ещё local-first, cloud работает отдельным `useCloudControlPlane`.
+- [x] Базовая миграция local → cloud (upload/link/import).
+- [x] Deep link `/share/:token`: read-only viewer без autosave.
+- [ ] Fork/copy shared → active storage; сейчас Fork импортирует только в local IndexedDB.
+- [ ] Добавить GitHub Actions CI: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
 ---
 
-Обновлено: 2026-01-23.
+Обновлено: 2026-09-29.
