@@ -13,7 +13,6 @@ export type AuthState = {
 export type AuthContextValue = AuthState & {
   supabase: SupabaseClient | null;
   loginWithGoogle: () => Promise<void>;
-  loginWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
 };
 

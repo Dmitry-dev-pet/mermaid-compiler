@@ -2,6 +2,16 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthContext, type AuthContextValue, type AuthState } from './auth';
 import { getHostedSupabaseClient } from '../services/supabaseClient';
 
+const AUTH_RETURN_PATH_KEY = 'mermaid_auth_return_path';
+
+const restoreAuthReturnPath = () => {
+  const returnPath = sessionStorage.getItem(AUTH_RETURN_PATH_KEY);
+  if (!returnPath) return;
+  sessionStorage.removeItem(AUTH_RETURN_PATH_KEY);
+  if (!returnPath.startsWith('/')) return;
+  window.history.replaceState({}, document.title, returnPath);
+};
+
 const cleanupAuthRedirectUrl = () => {
   const urlObj = new URL(window.location.href);
   let changed = false;
@@ -47,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const session = data.session ?? null;
         if (session) {
           cleanupAuthRedirectUrl();
+          restoreAuthReturnPath();
         }
         setState({
           status: session ? 'signed_in' : 'signed_out',
@@ -66,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (cancelled) return;
       if (event === 'SIGNED_IN') {
         cleanupAuthRedirectUrl();
+        restoreAuthReturnPath();
       }
       setState({
         status: session ? 'signed_in' : 'signed_out',
@@ -82,19 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = useCallback(async () => {
     if (!supabase) throw new Error('Supabase is not configured');
+    sessionStorage.setItem(
+      AUTH_RETURN_PATH_KEY,
+      window.location.pathname + window.location.search + window.location.hash,
+    );
     const redirectTo = `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
-    });
-    if (error) throw error;
-  }, [supabase]);
-
-  const loginWithGitHub = useCallback(async () => {
-    if (!supabase) throw new Error('Supabase is not configured');
-    const redirectTo = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
       options: { redirectTo },
     });
     if (error) throw error;
@@ -111,10 +117,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...state,
       supabase,
       loginWithGoogle,
-      loginWithGitHub,
       logout,
     };
-  }, [loginWithGoogle, loginWithGitHub, logout, state, supabase]);
+  }, [loginWithGoogle, logout, state, supabase]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
