@@ -19,7 +19,9 @@ The hosted public alpha keeps unfinished cloud features hidden by default. Hoste
 
 ## Try It
 
-The public UI is deployed separately from the source repository. Until the production URL is attached here, you can run the exact same app locally.
+**Live public alpha:** https://mermaid-compiler-hrt94ln5k-dmitrys-projects-60af16a7.vercel.app
+
+No account is required for the local-first editor. AI is optional and uses provider settings you configure in the browser.
 
 ## Run Locally
 
