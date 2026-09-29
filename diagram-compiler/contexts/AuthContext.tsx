@@ -106,16 +106,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   }, [supabase]);
 
-  const loginWithGitHub = useCallback(async () => {
-    if (!supabase) throw new Error('Supabase is not configured');
-    const redirectTo = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo },
-    });
-    if (error) throw error;
-  }, [supabase]);
-
   const logout = useCallback(async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signOut();
@@ -127,10 +117,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...state,
       supabase,
       loginWithGoogle,
-      loginWithGitHub,
       logout,
     };
-  }, [loginWithGoogle, loginWithGitHub, logout, state, supabase]);
+  }, [loginWithGoogle, logout, state, supabase]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
