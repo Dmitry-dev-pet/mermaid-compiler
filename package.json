@@ -1,6 +1,6 @@
 {
   "name": "mermaid-compiler",
-  "version": "1.0.0-alpha",
+  "version": "0.1.0-alpha",
   "description": "AI-assisted Mermaid diagram generator, editor, validator, and repair workspace",
   "scripts": {
     "dev": "npm --prefix diagram-compiler run dev",

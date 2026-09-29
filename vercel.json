@@ -1,0 +1,11 @@
+{
+  "installCommand": "npm ci && npm --prefix diagram-compiler ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "diagram-compiler/dist",
+  "rewrites": [
+    {
+      "source": "/share/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

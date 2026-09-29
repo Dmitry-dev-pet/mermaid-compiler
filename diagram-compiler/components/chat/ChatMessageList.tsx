@@ -79,10 +79,10 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
           {isProcessing && null}
           {shouldShowZeroState && (
             <SmartZeroState
-              title="Системное исследование"
-              headline="Преврати идею в архитектуру"
-              subtitle="Опиши продукт — я соберу notebook из 3–5 диаграмм и дам контекст."
-              hint="Enter — запуск исследования • Cmd/Ctrl+Enter — Build"
+              title="Public alpha"
+              headline="Turn a system idea into diagrams"
+              subtitle="Pick an example or describe your own system. Build creates a Mermaid diagram or a multi-diagram notebook."
+              hint="Enter — Chat • Cmd/Ctrl+Enter — Build"
               presets={DEFAULT_ZERO_STATE_PRESETS}
               onSelectPreset={onZeroStatePrompt}
             />

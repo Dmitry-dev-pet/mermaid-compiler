@@ -28,6 +28,8 @@ import { Select } from '../ui/Select';
 import { InlineStatus } from '../ui/InlineStatus';
 import { useAuth } from '../../contexts/auth';
 
+const EXPERIMENTAL_CLOUD_ENABLED = import.meta.env.VITE_ENABLE_EXPERIMENTAL_CLOUD === 'true';
+
 type SortKey = 'updated' | 'created' | 'name';
 
 type ProjectsMenuProps = {
@@ -835,14 +837,22 @@ const ProjectsMenu: React.FC<ProjectsMenuProps> = ({
       style={{ borderColor: 'var(--panel-border, #e5e7eb)', backgroundColor: 'var(--menu-bg, var(--panel-bg, #f3f4f6))' }}
     >
       <div className="divide-y divide-[var(--panel-border)]">
-        <CloudSection
-          storageMode={storageMode}
-          onStorageModeChange={onStorageModeChange}
-          cloudSync={cloudSync}
-          cloudProjects={cloudProjects}
-          cloudMigration={cloudMigration}
-        />
-        <ByoSupabaseSection byoConfig={byoConfig} onByoConfigChange={onByoConfigChange} onTestByoConfig={onTestByoConfig} />
+        {EXPERIMENTAL_CLOUD_ENABLED && (
+          <>
+            <CloudSection
+              storageMode={storageMode}
+              onStorageModeChange={onStorageModeChange}
+              cloudSync={cloudSync}
+              cloudProjects={cloudProjects}
+              cloudMigration={cloudMigration}
+            />
+            <ByoSupabaseSection
+              byoConfig={byoConfig}
+              onByoConfigChange={onByoConfigChange}
+              onTestByoConfig={onTestByoConfig}
+            />
+          </>
+        )}
         <LocalProjectsSection
           projects={projects}
           activeProjectId={activeProjectId}

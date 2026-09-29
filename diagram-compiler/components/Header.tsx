@@ -25,7 +25,9 @@ interface HeaderProps {
   projectsHeader?: React.ReactNode;
 }
 
-const DEFAULT_DOCS_URL = 'https://dmitry-dev-pet.github.io/mermaid-compiller/';
+const DEFAULT_DOCS_URL = 'https://github.com/Dmitry-dev-pet/mermaid-compiler/tree/main/docs';
+const DEFAULT_GITHUB_URL = 'https://github.com/Dmitry-dev-pet/mermaid-compiler';
+const EXPERIMENTAL_CLOUD_ENABLED = import.meta.env.VITE_ENABLE_EXPERIMENTAL_CLOUD === 'true';
 
 const HeaderNotebookSlot: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   if (!children) return null;
@@ -71,6 +73,12 @@ const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const docsUrl = (import.meta.env.VITE_DOCS_URL ?? DEFAULT_DOCS_URL).trim();
+  const githubUrl = (import.meta.env.VITE_GITHUB_URL ?? DEFAULT_GITHUB_URL).trim();
+  const openExternal = (url: string) => {
+    if (!url) return;
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!opened) window.location.assign(url);
+  };
   const openDocs = () => {
     if (!docsUrl) return;
     const opened = window.open(docsUrl, '_blank', 'noopener,noreferrer');
@@ -144,7 +152,12 @@ const Header: React.FC<HeaderProps> = ({
       }}
     >
       <div className="flex items-center gap-4 min-w-0 pr-2">
-        <h1 className="font-bold text-lg tracking-tight text-slate-800 dark:text-slate-100">Diagram Compiler</h1>
+        <div className="flex items-center gap-2 shrink-0">
+          <h1 className="font-bold text-lg tracking-tight text-slate-800 dark:text-slate-100">Mermaid Compiler</h1>
+          <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/50 dark:text-blue-300">
+            Public alpha
+          </span>
+        </div>
         {projectsHeader && <div className="flex-1 min-w-0">{projectsHeader}</div>}
       </div>
 
@@ -166,6 +179,7 @@ const Header: React.FC<HeaderProps> = ({
           llmTimeoutMs={llmTimeoutMs}
           onLLMTimeoutMsChange={onLLMTimeoutMsChange}
         />
+        {EXPERIMENTAL_CLOUD_ENABLED && (
         <div className="flex items-center gap-1">
           {auth.status === 'signed_in' ? (
             <Button
@@ -210,6 +224,7 @@ const Header: React.FC<HeaderProps> = ({
             </>
           )}
         </div>
+        )}
         <ThemeMenu theme={theme} onThemeChange={onThemeChange} />
         <Button
           type="button"
@@ -222,8 +237,17 @@ const Header: React.FC<HeaderProps> = ({
           <ExternalLink size={12} className="opacity-80" />
           Docs
         </Button>
-        <span className="cursor-pointer hover:text-slate-800 dark:hover:text-slate-200">Privacy</span>
-        <span className="cursor-pointer hover:text-slate-800 dark:hover:text-slate-200">Donate</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => openExternal(githubUrl)}
+          className="gap-1"
+          title={githubUrl}
+        >
+          <Github size={12} className="opacity-80" />
+          GitHub
+        </Button>
       </div>
     </PanelHeader>
   );
