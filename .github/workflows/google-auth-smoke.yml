@@ -32,6 +32,9 @@ jobs:
           )"
           echo "oauth_status=$status"
           echo "redirect_host=$host"
+          if [ "$status" != "302" ]; then
+            echo "oauth_error_body=$(head -c 500 /tmp/auth-body | tr '\n' ' ')"
+          fi
           test "$status" = "302"
           case "$host" in
             accounts.google.com|*.google.com) ;;
