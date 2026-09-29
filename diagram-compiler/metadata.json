@@ -1,4 +1,4 @@
 {
-  "name": "Diagram Compiler",
-  "description": "A professional tool to compile natural language specifications into Mermaid diagrams. Features a 3-column layout for Chat, Code, and Preview."
+  "name": "Mermaid Compiler",
+  "description": "Open-source, local-first workspace for generating, editing, validating, repairing, and exporting Mermaid diagrams with optional AI."
 }
