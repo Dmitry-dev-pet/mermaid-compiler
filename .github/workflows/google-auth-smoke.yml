@@ -1,0 +1,39 @@
+name: Google auth smoke
+
+on:
+  push:
+    branches:
+      - auth/google-gate
+
+permissions:
+  contents: read
+
+jobs:
+  google-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify Supabase Google OAuth redirect
+        env:
+          SUPABASE_URL: https://wpefygslnzayhkgsvkju.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_PKddSaNILSZ36WEQWLA9aQ_o492crt8
+          APP_URL: https://mermaid-compiler-hrt94ln5k-dmitrys-projects-60af16a7.vercel.app/
+        shell: bash
+        run: |
+          set -euo pipefail
+          authorize_url="$SUPABASE_URL/auth/v1/authorize?provider=google&redirect_to=$(python3 -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["APP_URL"], safe=""))')"
+          status="$(curl -sS -o /tmp/auth-body -D /tmp/auth-headers -w '%{http_code}' -H "apikey: $SUPABASE_PUBLISHABLE_KEY" "$authorize_url")"
+          location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^location:[[:space:]]*/, ""); gsub("\r", ""); print; exit}' /tmp/auth-headers)"
+          host="$(LOCATION="$location" python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          print(urlparse(os.environ.get("LOCATION", "")).hostname or "")
+          PY
+          )"
+          echo "oauth_status=$status"
+          echo "redirect_host=$host"
+          test "$status" = "302"
+          case "$host" in
+            accounts.google.com|*.google.com) ;;
+            *) echo "Unexpected Google OAuth redirect host: $host" >&2; exit 1 ;;
+          esac
