@@ -173,8 +173,8 @@ const Header: React.FC<HeaderProps> = ({
               variant="ghost"
               size="sm"
               className="gap-1 max-w-[180px]"
-              title={auth.status === 'error' ? (auth.error ?? authLabel) : authLabel}
-              disabled={authBusy || auth.status === 'disabled' || auth.status === 'loading'}
+              title={authLabel}
+              disabled={authBusy}
               onClick={handleLogout}
             >
               <UserIcon size={12} className="opacity-80" />

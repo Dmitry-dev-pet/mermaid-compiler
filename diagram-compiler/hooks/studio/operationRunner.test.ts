@@ -7,10 +7,24 @@ type RunLLMRequestArgs = Parameters<typeof runLLMRequestType>[0];
 
 vi.mock('../../services/llmRequestRunner', () => ({
   runLLMRequest: vi.fn(async (args: RunLLMRequestArgs) => {
-    args.onStart?.({ task: args.task });
+    const startedAt = Date.now();
+    args.onStart?.({
+      task: args.task,
+      attempt: 1,
+      maxAttempts: 2,
+      startedAt,
+    });
     args.onTimeout?.({ attempt: 1, maxAttempts: 2, error: new Error('timeout'), task: args.task });
     const result = await args.run();
-    args.onFinish?.({ status: 'success', durationMs: 12, task: args.task });
+    args.onFinish?.({
+      status: 'success',
+      durationMs: 12,
+      task: args.task,
+      attempt: 1,
+      maxAttempts: 2,
+      startedAt,
+      finishedAt: startedAt + 12,
+    });
     return result;
   }),
 }));

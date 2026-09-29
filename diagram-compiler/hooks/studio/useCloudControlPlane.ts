@@ -119,7 +119,7 @@ export const useCloudControlPlane = (args: {
       }
 
       const ready = await ensureProviderReady(provider);
-      if (!ready.ok) {
+      if (ready.ok === false) {
         setSyncStatus({ kind: 'error', message: ready.error });
         return;
       }
@@ -193,7 +193,7 @@ export const useCloudControlPlane = (args: {
     if (!enabled) return;
     setProjectsStatus({ kind: 'loading', message: 'Loading cloud projects…' });
     const ready = await ensureProviderReady(provider);
-    if (!ready.ok) {
+    if (ready.ok === false) {
       setProjectsStatus({ kind: 'error', message: ready.error });
       return;
     }
@@ -212,7 +212,7 @@ export const useCloudControlPlane = (args: {
       if (!enabled) return;
       setProjectsStatus({ kind: 'loading', message: 'Downloading project…' });
       const ready = await ensureProviderReady(provider);
-      if (!ready.ok) {
+      if (ready.ok === false) {
         setProjectsStatus({ kind: 'error', message: ready.error });
         return;
       }
@@ -261,7 +261,7 @@ export const useCloudControlPlane = (args: {
       setMigrationStatus({ kind: 'syncing', message: 'Starting…', done: 0, total: Math.max(1, sessionIds.length) });
 
       const ready = await ensureProviderReady(provider);
-      if (!ready.ok) {
+      if (ready.ok === false) {
         setMigrationStatus({ kind: 'error', message: ready.error });
         return;
       }

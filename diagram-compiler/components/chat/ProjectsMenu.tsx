@@ -233,7 +233,7 @@ const CloudSection: React.FC<{
             type="button"
             variant="ghost"
             onClick={handleCloudLogout}
-            disabled={cloudBusy || auth.status === 'disabled' || auth.status === 'loading'}
+            disabled={cloudBusy}
             className="text-[10px] px-2 py-1 rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 gap-1"
             title={cloudLabel}
           >

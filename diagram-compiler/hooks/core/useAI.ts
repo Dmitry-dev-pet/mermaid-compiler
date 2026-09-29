@@ -1,23 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AIConfig, ConnectionState, ProviderFilters } from '../../types';
+import { AIConfig, ConnectionState } from '../../types';
 import { DEFAULT_AI_CONFIG } from '../../constants';
 import { fetchModels } from '../../services/llmService';
-import { normalizeAiConfig } from '../../services/aiConfigNormalization';
+import { normalizeAiConfig, type LegacyAIConfig } from '../../services/aiConfigNormalization';
 import { safeParse } from '../../utils';
 
-type LegacyAIConfig = Omit<AIConfig, 'filtersByProvider'> & {
-  filters?: {
-    freeOnly?: boolean;
-    testedOnly?: boolean;
-    experimental?: boolean;
-  };
-  filtersByProvider?: Partial<ProviderFilters>;
-  selectedModelIdByProvider?: Partial<Record<AIConfig['provider'], string>>;
-};
 
 export const useAI = () => {
   const [aiConfig, setAiConfig] = useState<AIConfig>(() =>
-    normalizeAiConfig(safeParse('dc_ai_config', DEFAULT_AI_CONFIG as LegacyAIConfig))
+    normalizeAiConfig(safeParse<LegacyAIConfig>('dc_ai_config', DEFAULT_AI_CONFIG))
   );
   const previousProviderRef = useRef(aiConfig.provider);
 

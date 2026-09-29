@@ -81,7 +81,7 @@ const WhiteboardDebugOverlay: React.FC<WhiteboardDebugOverlayProps> = ({
   const copyDebugOverlayToClipboard = useCallback(async () => {
     const api = apiRef.current;
     const appState = api?.getAppState?.() as AppState | undefined;
-    const appStateRecord = appState ? (appState as Record<string, unknown>) : null;
+    const appStateRecord = appState ? (appState as unknown as Record<string, unknown>) : null;
     const zoomValue = appState ? resolveZoomValue(appState.zoom) : null;
     const payload = {
       sceneKey,
