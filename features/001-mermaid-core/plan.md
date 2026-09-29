@@ -40,25 +40,26 @@ Refactor / maintenance (после 2026-01-22):
 
 ---
 
-Storage Providers (2026-01-25):
+Storage Providers — reconciled 2026-09-29:
 28. [x] Define storage provider interface + capabilities (local/hosted/byo).
 29. [x] Add project bundle export/import (session + steps + revisions) and wire into studio.
 30. [x] Add UI for backup/export/import in Projects menu.
 31. [x] Implement hosted Supabase provider (projects table + optimistic versioning).
-32. [x] Implement BYO Supabase provider (config + schema checks).
-33. [x] Add E2EE layer (passphrase, KDF, AES-GCM, wrapped vault key).
-34. [x] Implement share links (viewer/editor) via Edge Functions.
-35. [x] Add conflict UX (overwrite/open cloud/save copy).
+32. [ ] Finish BYO Supabase: provider/config/schema exist, but add BYO-specific auth/session flow and verify end-to-end sync.
+33. [ ] Wire E2EE into active cloud storage: crypto + encrypted provider exist, but hosted/BYO runtime paths still advertise/use `e2ee: false`.
+34. [ ] Finish sharing: route/API/viewer exist; add editor UI, propagate permission, and implement E2EE key handling via URL fragment.
+35. [ ] Add cloud conflict-resolution UX (overwrite / open cloud / save copy), not only conflict detection/error text.
 
 ---
 
-SaaS / Hybrid Storage (2026-01-29):
-36. [ ] Add AuthContext (Supabase OAuth + reactive session).
-37. [ ] Add dynamic storage factory (local/hosted/byo) + active mode setting.
-38. [ ] Implement migration flow local → cloud (initial sync/upsert).
-39. [ ] Add share deep-link entry (`/share/:token`) as read-only mode (no autosave).
-40. [ ] Add Fork flow (copy shared into user storage).
+SaaS / Hybrid Storage — reconciled 2026-09-29:
+36. [x] Add hosted `AuthContext` (Supabase OAuth + reactive session).
+37. [ ] Replace local-primary + cloud-control-plane split with a true dynamic storage factory (local/hosted/byo) used by project orchestration.
+38. [x] Implement basic migration flow local → cloud (upload/link/import path via `useCloudControlPlane`).
+39. [x] Add share deep-link entry (`/share/:token`) as read-only mode without autosave.
+40. [ ] Finish Fork flow so shared projects copy into the user's active storage; current implementation forks to local IndexedDB only.
+41. [ ] Add application CI on pull requests and `main`: typecheck, lint, tests, build.
 
 ---
 
-Обновлено: 2026-01-23.
+Обновлено: 2026-09-29.
