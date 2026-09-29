@@ -72,9 +72,11 @@ export const useStudioHistoryRecorder = <
         nextMeta.totalBlocks = markdownMermaidBlocksLength;
       }
 
-      return Promise.resolve(
-        appendTimeStep({ ...(args as Record<string, unknown>), meta: nextMeta }),
-      ).catch((e) => {
+      const result = appendTimeStep({
+        ...(args as Record<string, unknown>),
+        meta: nextMeta,
+      } as AppendArgs) as ReturnType<TAppendTimeStep>;
+      return Promise.resolve(result).catch((e) => {
         console.error("Failed to record history step", e);
         return undefined;
       });

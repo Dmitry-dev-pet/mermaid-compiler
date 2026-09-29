@@ -60,7 +60,7 @@ export const useWhiteboardViewLock = (args: UseWhiteboardViewLockArgs) => {
   const setDebugRuntime = args.setDebugRuntime;
 
   const readAppStateNumber = useCallback((state: AppState, key: 'width' | 'height') => {
-    const value = (state as Record<string, unknown>)[key];
+    const value = (state as unknown as Record<string, unknown>)[key];
     return typeof value === 'number' && Number.isFinite(value) ? value : null;
   }, []);
 

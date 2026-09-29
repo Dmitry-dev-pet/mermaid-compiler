@@ -44,10 +44,10 @@ describe('requestNotebookPlan', () => {
             minContextWindow: 0,
           },
           agent: {
-            provider: '',
+            family: '',
           },
           cliproxy: {
-            provider: '',
+            family: '',
           },
         },
       },
@@ -94,10 +94,10 @@ describe('requestNotebookPlan', () => {
             minContextWindow: 0,
           },
           agent: {
-            provider: '',
+            family: '',
           },
           cliproxy: {
-            provider: '',
+            family: '',
           },
         },
       },
@@ -144,10 +144,10 @@ describe('requestNotebookPlan', () => {
             minContextWindow: 0,
           },
           agent: {
-            provider: '',
+            family: '',
           },
           cliproxy: {
-            provider: '',
+            family: '',
           },
         },
       },

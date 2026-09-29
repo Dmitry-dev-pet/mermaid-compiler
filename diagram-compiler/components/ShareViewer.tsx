@@ -3,7 +3,7 @@ import { ArrowLeft, Copy, Download } from 'lucide-react';
 import type { SessionBundle } from '../services/history/bundle';
 import { importSessionBundle } from '../services/history/bundle';
 import { createSupabaseHostedProvider, decodeProjectBundleFromBlob } from '../services/storage';
-import { initializeMermaid } from '../services/mermaidService';
+import { detectMermaidDiagramType, initializeMermaid } from '../services/mermaidService';
 import { augmentMermaidErrorForAutoFix } from '../utils/mermaidAutoFixHints';
 import { useMermaidSvgRender } from '../hooks/preview/useMermaidSvgRender';
 import { Button } from './ui/Button';
@@ -69,7 +69,8 @@ const ShareViewer: React.FC<ShareViewerProps> = ({ token }) => {
     isMarkdownMermaidMode: false,
     isMermaidValid: true,
     debounceMs: 50,
-    enrichError: (c, message) => augmentMermaidErrorForAutoFix(c, message),
+    enrichError: (c, message) =>
+      augmentMermaidErrorForAutoFix(detectMermaidDiagramType(c) ?? 'auto', message),
     bindFunctionsRef,
   });
 

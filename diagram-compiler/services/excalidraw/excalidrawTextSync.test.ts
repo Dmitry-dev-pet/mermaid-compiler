@@ -29,6 +29,9 @@ describe('excalidrawTextSync', () => {
     const t2 = patched.find((e) => e.id === 't2');
     const free = patched.find((e) => e.id === 'freeText');
     if (!t1 || !t2 || !free) throw new Error('Elements not found');
+    if (t1.type !== 'text' || t2.type !== 'text' || free.type !== 'text') {
+      throw new Error('Expected text elements');
+    }
     expect(t1.text).toBe('B');
     expect(t2.text).toBe('new');
     expect(free.text).toBe('y');

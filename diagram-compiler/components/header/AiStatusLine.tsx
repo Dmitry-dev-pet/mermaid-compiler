@@ -5,7 +5,7 @@ import type { CliproxyManagementInfo } from '../../hooks/core/useCliproxyManagem
 import type { CliproxyQuotasState } from '../../services/cliproxy/quotas/types';
 import type { AgentCodexQuotaState } from '../../hooks/core/useAgentCodexQuota';
 import type { AgentGeminiQuotaState } from '../../hooks/core/useAgentGeminiQuota';
-import { CliproxyAuthFile } from '../../utils/cliproxyAuthFileStatus';
+import type { CliproxyAuthFile } from '../../services/cliproxy/types';
 import { buildModelTooltip, getModelFamilyKey, type ModelFamilyKey } from '../../utils/aiModelUtils';
 import { buildQuotaBadges, type QuotaBadge } from '../../utils/aiQuotaBadges';
 import { AiAvatar, getAvatarForKey, type AvatarKey, type AvatarTooltipHandlers } from '../ai/AiAvatar';

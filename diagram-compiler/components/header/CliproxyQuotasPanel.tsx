@@ -197,7 +197,7 @@ export const CliproxyQuotasPanel: React.FC<CliproxyQuotasPanelProps> = ({
               count: number;
             }>;
 
-          const planCounts = files.reduce<Record<string, number>>((acc, file) => {
+          const planCounts = files.reduce((acc, file) => {
             const quotaPlan = quotas.codex?.[file.id]?.planType;
             const planRaw = typeof (quotaPlan ?? file.planType) === 'string'
               ? (quotaPlan ?? file.planType).trim().toLowerCase()
@@ -205,7 +205,7 @@ export const CliproxyQuotasPanel: React.FC<CliproxyQuotasPanelProps> = ({
             if (!planRaw) return acc;
             acc[planRaw] = (acc[planRaw] ?? 0) + 1;
             return acc;
-          }, {});
+          }, {} as Record<string, number>);
           const planSummary = Object.entries(planCounts)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([plan, count]) => `${plan}×${count}`)
