@@ -29,6 +29,8 @@ import { getAntigravityBucketLabel } from '../../services/cliproxy/quotas/parser
 import { AiStatusLine } from './AiStatusLine';
 import { getModelFamilyKey, getModelFamilyLabel } from '../../utils/aiModelUtils';
 import { getModelDisplayName } from '../../utils/aiModelDisplayName';
+import { getConnectionStatusLabel } from '../../utils/aiStatusPresentation';
+import { clearOpenCodeGoApiKey, getOpenCodeGoApiKey, setOpenCodeGoApiKey } from '../../services/openCodeGoCredentials';
 
 type AiControlPlaneMenuProps = {
   aiConfig: AIConfig;
@@ -68,6 +70,8 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
+  const [openCodeGoKey, setOpenCodeGoKey] = useState(() => aiConfig.provider === 'opencode-go' ? getOpenCodeGoApiKey() : '');
+  const [openCodeGoKeyError, setOpenCodeGoKeyError] = useState<string | null>(null);
   const [showAgentToken, setShowAgentToken] = useState(false);
   const [showProxyKey, setShowProxyKey] = useState(false);
   const [showProxyManagementKey, setShowProxyManagementKey] = useState(false);
@@ -124,6 +128,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   }, []);
 
   const getStatusTone = () => {
+    if (aiConfig.provider === 'opencode-go' && connectionState.status === 'connected') return 'text-amber-500';
     if (connectionState.status === 'connected') return 'text-emerald-500';
     if (connectionState.status === 'failed') return 'text-rose-500';
     if (connectionState.status === 'connecting') return 'text-amber-500';
@@ -133,6 +138,29 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   const updateConfig = useCallback((updates: Partial<AIConfig>) => {
     onConfigChange((prev) => ({ ...prev, ...updates }));
   }, [onConfigChange]);
+
+  const updateOpenCodeGoKey = (value: string) => {
+    onDisconnect();
+    setOpenCodeGoKey(value);
+    try {
+      if (value.trim()) setOpenCodeGoApiKey(value);
+      else clearOpenCodeGoApiKey();
+      setOpenCodeGoKeyError(null);
+    } catch {
+      setOpenCodeGoKeyError('Could not save the Go key. Check browser storage settings and enter the key again.');
+    }
+  };
+
+  const clearOpenCodeGoKey = () => {
+    onDisconnect();
+    try {
+      clearOpenCodeGoApiKey();
+      setOpenCodeGoKey('');
+      setOpenCodeGoKeyError(null);
+    } catch {
+      setOpenCodeGoKeyError('Could not remove the Go key. Check browser storage settings and try again.');
+    }
+  };
 
   const updateSelectedModel = useCallback((modelId: string) => {
     onConfigChange((prev) => ({
@@ -173,6 +201,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   const isOpenRouter = aiConfig.provider === 'openrouter';
   const isAgent = aiConfig.provider === 'agent';
   const isCliproxy = aiConfig.provider === 'cliproxy';
+  const isOpenCodeGo = aiConfig.provider === 'opencode-go';
   const cliproxyAuthFiles = useMemo(
     () => (cliproxyInfo.cliproxyAuthFiles ?? []) as CliproxyAuthFile[],
     [cliproxyInfo.cliproxyAuthFiles],
@@ -188,7 +217,9 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   }, [cliproxyAuthFiles, cliproxySubscriptionsGroupBy, isCliproxy, showCliproxySubscriptions]);
   const filtersByProvider = aiConfig.filtersByProvider ?? DEFAULT_AI_CONFIG.filtersByProvider;
   const openRouterFilters = filtersByProvider.openrouter;
-  const proxyFilters = isOpenRouter ? null : (isAgent ? filtersByProvider.agent : filtersByProvider.cliproxy);
+  const openCodeGoFilters = filtersByProvider['opencode-go'] ?? DEFAULT_AI_CONFIG.filtersByProvider['opencode-go'];
+  const proxyFilters = isAgent ? filtersByProvider.agent : isCliproxy ? filtersByProvider.cliproxy : null;
+  const activeVendor = isOpenCodeGo ? openCodeGoFilters.vendor : openRouterFilters.vendor;
   const timeoutSeconds = Math.max(5, Math.min(300, Math.round(llmTimeoutMs / 1000)));
   const statusToneClass = getStatusTone();
   const reasoningEffort =
@@ -241,9 +272,23 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
     });
   };
 
+  const updateOpenCodeGoVendor = (vendor: string) => {
+    onConfigChange((prev) => ({
+      ...prev,
+      filtersByProvider: {
+        ...prev.filtersByProvider,
+        'opencode-go': { vendor },
+      },
+    }));
+  };
+
   const switchProvider = (provider: AIConfig['provider']) => {
     if (aiConfig.provider === provider) return;
     onDisconnect();
+    if (provider === 'opencode-go') {
+      setOpenCodeGoKey(getOpenCodeGoApiKey());
+      setOpenCodeGoKeyError(null);
+    }
     const storedModelId = aiConfig.selectedModelIdByProvider?.[provider] ?? '';
     updateConfig({ provider, selectedModelId: storedModelId });
   };
@@ -279,7 +324,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   });
 
   const vendorCounts = new Map<string, number>();
-  if (isOpenRouter) {
+  if (isOpenRouter || isOpenCodeGo) {
     baseFilteredModels.forEach((model) => {
       if (!model || !model.vendor) return;
       vendorCounts.set(model.vendor, (vendorCounts.get(model.vendor) ?? 0) + 1);
@@ -287,7 +332,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   }
 
   const familyCandidates = new Set<'gpt' | 'claude' | 'gemini' | 'other'>();
-  if (!isOpenRouter) {
+  if (isAgent || isCliproxy) {
     baseFilteredModels.forEach((model) => {
       if (!model) return;
       familyCandidates.add(getModelFamilyKey(model));
@@ -298,8 +343,8 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([vendor, count]) => ({ vendor, count }));
 
-  if (isOpenRouter && openRouterFilters.vendor && !vendorCounts.has(openRouterFilters.vendor)) {
-    vendorOptions.unshift({ vendor: openRouterFilters.vendor, count: 0 });
+  if ((isOpenRouter || isOpenCodeGo) && activeVendor && !vendorCounts.has(activeVendor)) {
+    vendorOptions.unshift({ vendor: activeVendor, count: 0 });
   }
 
   const familyOptions = Array.from(familyCandidates.values())
@@ -309,7 +354,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
       return { family, label: getModelFamilyLabel(family), count };
     });
 
-  if (!isOpenRouter && proxyFilters?.family) {
+  if ((isAgent || isCliproxy) && proxyFilters?.family) {
     const active = proxyFilters.family.trim().toLowerCase() as 'gpt' | 'claude' | 'gemini' | 'other';
     if (active && !familyCandidates.has(active)) {
       familyOptions.unshift({ family: active, label: getModelFamilyLabel(active), count: 0 });
@@ -320,8 +365,8 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
 
   const filteredModels = baseFilteredModels.filter((m) => {
     if (!m) return false;
-    if (isOpenRouter) {
-      if (openRouterFilters.vendor && m.vendor !== openRouterFilters.vendor) return false;
+    if (isOpenRouter || isOpenCodeGo) {
+      if (activeVendor && m.vendor !== activeVendor) return false;
       return true;
     }
 
@@ -389,6 +434,9 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
     if (nextOpen && aiConfig.provider === 'cliproxy' && connectionState.status !== 'connected') {
       setShowProxySettings(true);
     }
+    if (nextOpen && isOpenCodeGo && !openCodeGoKeyError) {
+      setOpenCodeGoKey(getOpenCodeGoApiKey());
+    }
     setIsOpen(nextOpen);
   };
 
@@ -421,12 +469,18 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
         <div className="absolute top-full right-0 mt-2 w-[400px] bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50 max-h-[calc(100vh-5rem)] overflow-auto overscroll-contain">
           <div className="mb-4">
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Provider</label>
-            <RadioGroup>
+            <RadioGroup className="flex-wrap">
               <RadioOption
                 name="provider"
                 checked={aiConfig.provider === 'openrouter'}
                 onChange={() => switchProvider('openrouter')}
                 label="OpenRouter"
+              />
+              <RadioOption
+                name="provider"
+                checked={isOpenCodeGo}
+                onChange={() => switchProvider('opencode-go')}
+                label="OpenCode Go"
               />
               <RadioOption
                 name="provider"
@@ -463,6 +517,39 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
                     ariaLabelHide="Hide API key"
                   />
                 </div>
+              </div>
+            ) : isOpenCodeGo ? (
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="opencode-go-api-key" className="block text-xs text-slate-500 dark:text-slate-400 mb-1">OpenCode Go API key</label>
+                  <Input
+                    id="opencode-go-api-key"
+                    type="password"
+                    autoComplete="new-password"
+                    name="opencode-go-secret"
+                    value={openCodeGoKey}
+                    onChange={(event) => updateOpenCodeGoKey(event.target.value)}
+                    placeholder="Your personal Go key"
+                    aria-describedby={openCodeGoKeyError ? 'opencode-go-key-help opencode-go-key-error' : 'opencode-go-key-help'}
+                    aria-invalid={Boolean(openCodeGoKeyError)}
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    size="md"
+                  />
+                </div>
+                <p id="opencode-go-key-help" className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Loading models does not generate text. Subscription access is checked when you send a prompt.
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  To stay within your subscription, keep Use balance off in{' '}
+                  <a href="https://opencode.ai/console" target="_blank" rel="noopener noreferrer" className="underline">OpenCode Console</a>.
+                </p>
+                {openCodeGoKeyError ? (
+                  <p id="opencode-go-key-error" role="alert" className="text-xs text-red-600 dark:text-red-400">{openCodeGoKeyError}</p>
+                ) : null}
+                <Button type="button" onClick={clearOpenCodeGoKey} variant="ghost" className="text-xs">
+                  Clear Go key
+                </Button>
               </div>
             ) : isAgent ? (
               <div className="space-y-3">
@@ -708,11 +795,11 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
               </CollapsibleSection>
             )}
 
-            <div className="mt-3 flex items-center justify-between">
+            <div className={`mt-3 flex gap-2 ${isOpenCodeGo ? 'flex-col items-start' : 'items-center justify-between'}`}>
               <span
                 className={`text-xs font-medium flex items-center gap-1 ${
                   connectionState.status === 'connected'
-                    ? 'text-green-600 dark:text-green-400'
+                    ? isOpenCodeGo ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'
                     : connectionState.status === 'failed'
                       ? 'text-red-600 dark:text-red-400'
                       : 'text-slate-500 dark:text-slate-400'
@@ -720,18 +807,18 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
               >
                 {connectionState.status === 'connected' && <Check size={12} />}
                 {connectionState.status === 'failed' && <X size={12} />}
-                Status: {connectionState.status}
+                Status: {getConnectionStatusLabel(aiConfig.provider, connectionState.status)}
                 {connectionState.error && <span className="ml-1 text-red-500">({connectionState.error})</span>}
               </span>
 
               {connectionState.status !== 'connected' ? (
                 <Button
                   onClick={onConnect}
-                  disabled={connectionState.status === 'connecting'}
+                  disabled={connectionState.status === 'connecting' || (isOpenCodeGo && (!openCodeGoKey.trim() || Boolean(openCodeGoKeyError)))}
                   className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
                 >
                   {connectionState.status === 'connecting' && <Loader2 size={12} className="animate-spin" />}
-                  Test connection
+                  {isOpenCodeGo ? 'Load models' : 'Test connection'}
                 </Button>
               ) : (
                 <Button
@@ -898,7 +985,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
 
               {showFilters && (
                 <div className="mb-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded text-xs grid grid-cols-2 gap-2 border border-slate-100 dark:border-slate-700 dark:text-slate-300">
-                    {!isOpenRouter && familyOptions.length > 0 && (
+                    {(isAgent || isCliproxy) && familyOptions.length > 0 && (
                       <div className="col-span-2">
                         <label className="block text-[10px] uppercase text-slate-400 mb-1">Family</label>
                         <div className="flex flex-wrap gap-1">
@@ -933,12 +1020,12 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
                         </div>
                       </div>
                     )}
-                    {isOpenRouter && (
+                    {(isOpenRouter || isOpenCodeGo) && (
                       <div className="col-span-2">
                         <label className="block text-[10px] uppercase text-slate-400 mb-1">Vendor</label>
                       <Select
-                        value={openRouterFilters.vendor}
-                        onChange={(e) => updateOpenRouterFilters({ vendor: e.target.value })}
+                        value={activeVendor}
+                        onChange={(e) => isOpenCodeGo ? updateOpenCodeGoVendor(e.target.value) : updateOpenRouterFilters({ vendor: e.target.value })}
                         size="sm"
                       >
                         <option value="">
@@ -1066,7 +1153,9 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-[10px] text-slate-400 text-center">
-            Your API key is stored locally in your browser. Requests go directly to your provider.
+            {isOpenCodeGo
+              ? 'Your Go key is stored in this browser, outside project backups. Requests go through this app to OpenCode Go.'
+              : 'Your API key is stored locally in your browser. Requests go directly to your provider.'}
           </div>
         </div>
       )}

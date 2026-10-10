@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { parseNotebookCountFromIntent, parseNotebookCountFromText, requestNotebookPlan } from './useNotebookBuild';
 import { NOTEBOOK_PLAN_SCHEMA_VERSION } from '../../services/notebookPlanSchema';
+import { DEFAULT_AI_CONFIG } from '../../constants';
+import { TimeoutError } from '../../services/llmTimeout';
 
 const buildRawPlan = (count: number) => {
   const diagrams = Array.from({ length: count }, (_, index) => ({
@@ -17,6 +19,40 @@ const buildRawPlan = (count: number) => {
 };
 
 describe('requestNotebookPlan', () => {
+  it('aborts a slow Go planner call without timeout or count retries', async () => {
+    vi.useFakeTimers();
+    try {
+      const signals: AbortSignal[] = [];
+      const runPlanner = vi.fn((_message: unknown, signal?: AbortSignal | null) => {
+        if (!signal) throw new Error('Expected a cancellable planner request');
+        signals.push(signal);
+        return new Promise<string>((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        });
+      });
+      const request = requestNotebookPlan({
+        aiConfig: { ...DEFAULT_AI_CONFIG, provider: 'opencode-go' },
+        sessionId: 'mermaid:project-123:main',
+        modelParams: null,
+        prompt: 'Build one diagram',
+        requestedN: 1,
+        docs: '',
+        language: 'English',
+        timeoutMs: 100,
+        addMessage: () => ({ id: 'msg', role: 'assistant', content: '', timestamp: 1 }),
+        runPlanner,
+      });
+      const rejection = expect(request).rejects.toBeInstanceOf(TimeoutError);
+      await vi.advanceTimersByTimeAsync(100);
+      await rejection;
+      expect(runPlanner).toHaveBeenCalledTimes(1);
+      expect(signals[0].aborted).toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('retries when planner returns wrong count and succeeds on next attempt', async () => {
     const runPlanner = vi
       .fn()
@@ -34,7 +70,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -49,6 +85,7 @@ describe('requestNotebookPlan', () => {
           cliproxy: {
             family: '',
           },
+          'opencode-go': { vendor: '' },
         },
       },
       modelParams: null,
@@ -84,7 +121,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -99,6 +136,7 @@ describe('requestNotebookPlan', () => {
           cliproxy: {
             family: '',
           },
+          'opencode-go': { vendor: '' },
         },
       },
       modelParams: null,
@@ -134,7 +172,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -149,6 +187,7 @@ describe('requestNotebookPlan', () => {
           cliproxy: {
             family: '',
           },
+          'opencode-go': { vendor: '' },
         },
       },
       modelParams: null,

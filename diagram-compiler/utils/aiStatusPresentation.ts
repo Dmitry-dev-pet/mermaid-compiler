@@ -1,4 +1,4 @@
-import type { AIConfig, Model } from '../types';
+import type { AIConfig, ConnectionState, Model } from '../types';
 import type { CliproxyAuthFile } from '../utils/cliproxyAuthFileStatus';
 import { isCliproxyAuthFileReady, normalizeCliproxyProviderKey } from '../utils/cliproxyAuthFileStatus';
 import { GEMINI_CLI_SUPPORTED_MODEL_IDS, getModelFamilyKey, type ModelFamilyKey } from './aiModelUtils';
@@ -63,7 +63,15 @@ export const getCliproxyViaProviders = (args: ViaProvidersArgs): ViaProviderToke
   return present;
 };
 
-export type ProviderBadgeKey = ModelFamilyKey | 'openrouter' | ViaProviderToken;
+export type ProviderBadgeKey = ModelFamilyKey | 'openrouter' | 'opencode-go' | ViaProviderToken;
+
+export const getConnectionStatusLabel = (provider: AIConfig['provider'], status: ConnectionState['status']): string => {
+  if (provider !== 'opencode-go') return status;
+  if (status === 'connected') return 'Models loaded; generation not verified';
+  if (status === 'connecting') return 'Loading models…';
+  if (status === 'failed') return 'Model discovery failed';
+  return 'Not connected';
+};
 
 type ProviderBadgeArgs = {
   aiProvider: AIConfig['provider'];
@@ -74,6 +82,7 @@ type ProviderBadgeArgs = {
 
 export const getProviderBadges = (args: ProviderBadgeArgs): ProviderBadgeKey[] => {
   if (args.aiProvider === 'openrouter') return ['openrouter'];
+  if (args.aiProvider === 'opencode-go') return ['opencode-go'];
   if (args.aiProvider === 'agent') {
     if (args.family === 'gemini') return ['gemini-cli'];
     return ['codex'];

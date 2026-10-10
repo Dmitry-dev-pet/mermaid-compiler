@@ -24,6 +24,9 @@ export const filterModels = (models: Model[], config: AIConfig): Model[] => {
       if (openRouterFilters.minContextWindow > 0 && (m.contextLength ?? 0) < openRouterFilters.minContextWindow) return false;
       // Vendor filter is applied separately in UI usually, but we can include it here if we want a full filter
       if (openRouterFilters.vendor && m.vendor !== openRouterFilters.vendor) return false;
+    } else if (config.provider === 'opencode-go') {
+      const vendor = config.filtersByProvider['opencode-go'].vendor;
+      if (vendor && m.vendor !== vendor) return false;
     } else {
       const proxyFilters = config.provider === 'agent'
         ? config.filtersByProvider.agent

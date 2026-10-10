@@ -2,6 +2,7 @@ import type { CliproxyAuthFile } from '../services/cliproxy/types';
 import type { CliproxyQuotasState } from '../services/cliproxy/quotas/types';
 import type { AgentCodexQuotaState } from '../hooks/core/useAgentCodexQuota';
 import type { AgentGeminiQuotaState } from '../hooks/core/useAgentGeminiQuota';
+import type { Provider } from '../types';
 import { remainingPercentFromUsedPercent } from './percent';
 import { getAntigravityBucketLabel } from '../services/cliproxy/quotas/parsers';
 import { averagePercent, getGeminiGroupLabelForModel, type ModelFamilyKey } from './aiModelUtils';
@@ -14,7 +15,7 @@ export type QuotaBadge = {
 };
 
 export const buildQuotaBadges = (args: {
-  provider: 'openrouter' | 'agent' | 'cliproxy';
+  provider: Provider;
   selectedModelId: string;
   modelName?: string | null;
   family: ModelFamilyKey;
@@ -37,7 +38,7 @@ export const buildQuotaBadges = (args: {
   } = args;
 
   if (!selectedModelId) return [];
-  if (provider === 'openrouter') return [];
+  if (provider === 'openrouter' || provider === 'opencode-go') return [];
   if (family === 'other') return [];
 
   const selectedId = selectedModelId.trim().toLowerCase();

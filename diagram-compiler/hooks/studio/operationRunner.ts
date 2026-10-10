@@ -39,7 +39,9 @@ export type StudioOperationRunner = {
 };
 
 export const createStudioOperationRunner = (
-  ctx: Pick<StudioContext, "onLLMRequestStart" | "getAbortSignal">,
+  ctx: Pick<StudioContext, "onLLMRequestStart" | "getAbortSignal"> & {
+    aiConfig?: Pick<StudioContext["aiConfig"], "provider">;
+  },
   helpers: Pick<StudioOperationHelpers, "logEvent">,
 ): StudioOperationRunner => {
   const runLLM: StudioOperationRunner["runLLM"] = async (args) => {
@@ -48,11 +50,13 @@ export const createStudioOperationRunner = (
     let stageStarted = false;
     let contextLogged = false;
     const signal = args.signal ?? ctx.getAbortSignal?.() ?? undefined;
+    const isOpenCodeGo = ctx.aiConfig?.provider === "opencode-go";
 
     return runLLMRequest({
       task: args.task,
-      run: () => args.run(signal ?? undefined),
-      retries: args.retries,
+      run: (attemptSignal) => args.run(attemptSignal ?? signal ?? undefined),
+      retries: isOpenCodeGo ? 1 : args.retries,
+      abortOnTimeout: isOpenCodeGo,
       timeoutMs: args.timeoutMs,
       signal,
       onStart: (notice) => {

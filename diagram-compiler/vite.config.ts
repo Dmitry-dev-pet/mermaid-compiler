@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { openCodeGoPlugin } from './server/openCodeGoVitePlugin';
 
 export default defineConfig(({ mode }) => {
   return {
@@ -8,7 +9,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
     },
-    plugins: [react()],
+    plugins: [react(), openCodeGoPlugin()],
     optimizeDeps: {
       // Mermaid uses dynamic imports for diagram modules (e.g. classDiagram).
       // When deps were updated, Vite can serve stale optimized chunks until the

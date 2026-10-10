@@ -11,6 +11,8 @@ import {
 import { sanitizeMermaidByType } from "../../utils/mermaidSanitizer";
 import { runLLMRequest } from "../../services/llmRequestRunner";
 import type { AIConfig } from "../../types";
+import { OpenCodeGoError } from "../../services/llm/openCodeGoClient";
+import { TimeoutError } from "../../services/llmTimeout";
 
 vi.mock("../../services/llmService", () => ({
   generateDiagram: vi.fn(),
@@ -56,7 +58,7 @@ const testAiConfig: AIConfig = {
   proxyManagementKey: "",
   proxyEndpoint: "",
   selectedModelId: "test",
-  selectedModelIdByProvider: { openrouter: "test", agent: "", cliproxy: "test" },
+  selectedModelIdByProvider: { openrouter: "test", agent: "", cliproxy: "test", 'opencode-go': '' },
   filtersByProvider: {
     openrouter: {
       vendor: "",
@@ -67,6 +69,7 @@ const testAiConfig: AIConfig = {
     },
     agent: { family: "" },
     cliproxy: { family: "" },
+    'opencode-go': { vendor: '' },
   },
 };
 
@@ -169,6 +172,7 @@ describe("runBuildPipeline", () => {
     const onValidationError = vi.fn();
     const result = await runBuildPipeline({
       ...baseOptions,
+      sessionId: 'mermaid:project-123:main',
       callbacks: { onAutoFixAttempt, onValidationError },
     });
 
@@ -176,5 +180,39 @@ describe("runBuildPipeline", () => {
     expect(result.autoFixAttempts).toBe(1);
     expect(onAutoFixAttempt).toHaveBeenCalled();
     expect(onValidationError).toHaveBeenCalledWith("line 9");
+    expect(vi.mocked(generateDiagram).mock.calls[0][2].sessionId).toBe('mermaid:project-123:main');
+    expect(vi.mocked(fixDiagram).mock.calls[0][3].sessionId).toBe('mermaid:project-123:main');
+  });
+
+  it.each([401, 402, 403, 429, 504])('stops Go HTTP %i before retry, fallback or auto-fix', async (status) => {
+    const error = new OpenCodeGoError(status, 'Go access unavailable');
+    vi.mocked(generateDiagram).mockRejectedValue(error);
+    await expect(runBuildPipeline({
+      ...baseOptions,
+      aiConfig: { ...testAiConfig, provider: 'opencode-go' },
+      sessionId: 'mermaid:project-123:main',
+      maxAttempts: 3,
+      allowFallback: true,
+    })).rejects.toBe(error);
+    expect(generateDiagram).toHaveBeenCalledTimes(1);
+    expect(fixDiagram).not.toHaveBeenCalled();
+    expect(prepareMermaid).not.toHaveBeenCalled();
+  });
+
+  it('stops an ambiguous Go timeout before another build attempt or fallback', async () => {
+    const error = new TimeoutError('LLM request timed out');
+    vi.mocked(generateDiagram).mockRejectedValue(error);
+    await expect(runBuildPipeline({
+      ...baseOptions,
+      aiConfig: { ...testAiConfig, provider: 'opencode-go' },
+      sessionId: 'mermaid:project-123:main',
+      maxAttempts: 3,
+      buildRequestRetries: 3,
+      allowFallback: true,
+    })).rejects.toBe(error);
+    expect(generateDiagram).toHaveBeenCalledTimes(1);
+    expect(runLLMRequest).toHaveBeenCalledWith(expect.objectContaining({ retries: 1, abortOnTimeout: true }));
+    expect(fixDiagram).not.toHaveBeenCalled();
+    expect(prepareMermaid).not.toHaveBeenCalled();
   });
 });

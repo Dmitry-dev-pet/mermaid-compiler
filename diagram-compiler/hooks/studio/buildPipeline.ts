@@ -18,6 +18,7 @@ import {
 import { augmentMermaidErrorForAutoFix } from "../../utils/mermaidAutoFixHints";
 import type { AIConfig, DiagramType, Message, ModelParams, ThinkingStyle } from "../../types";
 import type { LLMRequestContext } from "../../services/llm/types";
+import { shouldStopOpenCodeGoOperation } from "../../services/llm/openCodeGoClient";
 import type { StudioOperationRunner } from "./operationRunner";
 
 const parseHttpStatusFromErrorMessage = (message: string): number | null => {
@@ -69,6 +70,7 @@ type BuildValidationCallbacks = {
 };
 
 type BuildPipelineOptions = {
+  sessionId?: string;
   aiConfig: AIConfig;
   modelParams?: ModelParams | null;
   diagramType: DiagramType;
@@ -153,6 +155,7 @@ export const runBuildPipeline = async (
   options: BuildPipelineOptions,
 ): Promise<BuildPipelineResult> => {
   const {
+    sessionId,
     aiConfig,
     modelParams,
     diagramType,
@@ -176,6 +179,7 @@ export const runBuildPipeline = async (
   let currentAttempt = 0;
   let suppressEmpty = false;
   let contextSent = false;
+  let goStopError: Error | null = null;
   const attemptResult = await runAttemptLoop({
     maxAttempts,
     onAttempt: (attempt) => {
@@ -190,12 +194,15 @@ export const runBuildPipeline = async (
       callbacks?.onEmpty?.(attempt, maxAttempts);
     },
     onError: (attempt, error) => {
+      if (aiConfig.provider === 'opencode-go' && shouldStopOpenCodeGoOperation(error)) goStopError = error;
       const message = error instanceof Error ? error.message : String(error);
       callbacks?.onError?.(attempt, maxAttempts, message);
     },
-    shouldRetryOnError: (_attempt, error) => shouldRetryBuildAttemptOnError(error),
+    shouldRetryOnError: (_attempt, error) =>
+      !(aiConfig.provider === 'opencode-go' && shouldStopOpenCodeGoOperation(error)) && shouldRetryBuildAttemptOnError(error),
     execute: async () => {
       const requestContext: LLMRequestContext = {
+        sessionId,
         diagramType,
         docsContext: docs,
         language,
@@ -221,14 +228,16 @@ export const runBuildPipeline = async (
           })
         : await runLLMRequest({
             task: "build",
-            run: () =>
+            run: (signal) =>
               generateDiagram(
                 llmMessages,
                 aiConfig,
                 requestContext,
                 modelParams,
+                signal,
               ),
-            retries: buildRequestRetries,
+            retries: aiConfig.provider === "opencode-go" ? 1 : buildRequestRetries,
+            abortOnTimeout: aiConfig.provider === "opencode-go",
             timeoutMs,
             onStart: onLLMRequestStart,
           });
@@ -279,6 +288,8 @@ export const runBuildPipeline = async (
       return cleanCode;
     },
   });
+
+  if (goStopError) throw goStopError;
 
   const resolvedFallback = allowFallback
     ? (fallbackCode ?? getFallbackMermaid(diagramType))
@@ -332,6 +343,7 @@ export const runBuildPipeline = async (
       );
       const fixInput = prepareMermaid(code, diagramType).sanitizedCode;
       const fixContext: LLMRequestContext = {
+        sessionId,
         diagramType,
         docsContext: docs,
         language,
@@ -356,15 +368,17 @@ export const runBuildPipeline = async (
           })
         : await runLLMRequest({
             task: "auto-fix",
-            run: () =>
+            run: (signal) =>
               fixDiagram(
                 fixInput,
                 enrichedErrorMessage,
                 aiConfig,
                 fixContext,
                 modelParams,
+                signal,
               ),
-            retries: autoFixRequestRetries,
+            retries: aiConfig.provider === "opencode-go" ? 1 : autoFixRequestRetries,
+            abortOnTimeout: aiConfig.provider === "opencode-go",
             timeoutMs,
             onStart: onLLMRequestStart,
           });

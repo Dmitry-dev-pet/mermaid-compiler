@@ -14,7 +14,7 @@ const baseAIConfig: AIConfig = {
   proxyManagementKey: '',
   proxyEndpoint: '',
   selectedModelId: 'test-model',
-  selectedModelIdByProvider: { openrouter: 'test-model', agent: '', cliproxy: 'proxy-model' },
+  selectedModelIdByProvider: { openrouter: 'test-model', agent: '', cliproxy: 'proxy-model', 'opencode-go': '' },
   filtersByProvider: {
     openrouter: {
       vendor: 'any',
@@ -25,6 +25,7 @@ const baseAIConfig: AIConfig = {
     },
     agent: { family: '' },
     cliproxy: { family: '' },
+    'opencode-go': { vendor: '' },
   },
 };
 

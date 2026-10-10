@@ -165,6 +165,7 @@ export const createBuildHandler = (ctx: StudioContext) => {
 
           const attemptNotes: string[] = [];
           const buildResult = await runBuildPipeline({
+            sessionId: ctx.llmSessionId,
             aiConfig: ctx.aiConfig,
             modelParams: ctx.modelParams,
             diagramType: ctx.appState.diagramType,

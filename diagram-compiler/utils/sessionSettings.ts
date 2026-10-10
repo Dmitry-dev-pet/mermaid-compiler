@@ -18,7 +18,7 @@ export const buildSessionSettings = (
   modelParams?: SessionSettings['modelParams']
 ): SessionSettings => ({
   appState,
-  aiConfig,
+  aiConfig: normalizeAiConfig(aiConfig),
   modelParams,
 });
 

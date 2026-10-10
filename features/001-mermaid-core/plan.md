@@ -63,3 +63,15 @@ SaaS / Hybrid Storage — reconciled 2026-09-29:
 ---
 
 Обновлено: 2026-09-29.
+
+
+## OpenCode Go — 2026-10-10
+
+42. [x] Add the personal OpenCode Go provider and isolated browser credential setting.
+43. [x] Add a fixed-destination, non-persistent Go request handler with client/session identification.
+44. [x] Wire Go model discovery and stable conversation IDs through all studio operations.
+45. [x] Verify provider/handler behavior with mocked upstream requests and run application quality checks.
+46. [x] Keep real subscription verification explicit and separate from catalogue discovery.
+
+
+Validation: typecheck, lint, all 307 tests and production build passed in [CI run 38090010331](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38090010331) for code commit `0362730f6b5519b35cb46ecab25efc6f8b6e0099`. Real subscription generation still requires a user-supplied key and an explicit prompt in the application.

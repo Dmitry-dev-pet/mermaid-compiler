@@ -7,5 +7,11 @@
       "source": "/share/:path*",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/opencode-go.ts": {
+      "supportsCancellation": true,
+      "maxDuration": 300
+    }
+  }
 }

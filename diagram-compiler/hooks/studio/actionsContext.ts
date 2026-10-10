@@ -28,6 +28,7 @@ export type MermaidUpdateTarget =
   | { mode: "code" };
 
 export type StudioActionsDeps = {
+  llmSessionId?: string;
   aiConfig: AIConfig;
   connectionState: ConnectionState;
   appState: AppState;
@@ -390,6 +391,7 @@ ${code}
       args.allowedDiagramTypes ??
       (resolvedDiagramType === "auto" ? deps.appState.mainDiagramTypes : null);
     return {
+      sessionId: deps.llmSessionId,
       diagramType: resolvedDiagramType,
       allowedDiagramTypes: resolvedAllowedDiagramTypes,
       docsContext: args.docsContext,

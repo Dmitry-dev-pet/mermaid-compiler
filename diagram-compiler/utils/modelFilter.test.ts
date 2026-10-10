@@ -24,6 +24,7 @@ describe('modelFilter', () => {
       openrouter: '',
       agent: '',
       cliproxy: '',
+      'opencode-go': '',
     },
     filtersByProvider: {
       openrouter: {
@@ -38,6 +39,9 @@ describe('modelFilter', () => {
       },
       cliproxy: {
         family: '',
+      },
+      'opencode-go': {
+        vendor: '',
       },
     },
   };
@@ -109,5 +113,37 @@ describe('modelFilter', () => {
     };
     const result = filterModels(mockModels, config);
     expect(result).toHaveLength(4);
+  });
+
+  it('does not apply OpenRouter or proxy filters to Go models', () => {
+    const models: Model[] = [
+      { id: 'kimi-k2.5', name: 'Kimi K2.5', vendor: 'moonshotai' },
+      { id: 'glm-5', name: 'GLM-5', vendor: 'zai' },
+    ];
+    const config: AIConfig = {
+      ...baseConfig,
+      provider: 'opencode-go',
+      filtersByProvider: {
+        ...baseConfig.filtersByProvider,
+        openrouter: { ...baseConfig.filtersByProvider.openrouter, freeOnly: true, testedOnly: true, vendor: 'openai', minContextWindow: 200000 },
+        agent: { family: 'gemini' },
+        cliproxy: { family: 'gpt' },
+      },
+    };
+    expect(filterModels(models, config)).toEqual(models);
+  });
+
+  it('keeps the Go vendor filter separate when switching providers', () => {
+    const config: AIConfig = {
+      ...baseConfig,
+      provider: 'opencode-go',
+      filtersByProvider: {
+        ...baseConfig.filtersByProvider,
+        openrouter: { ...baseConfig.filtersByProvider.openrouter, vendor: 'openai' },
+        'opencode-go': { vendor: 'google' },
+      },
+    };
+    expect(filterModels(mockModels, config).map((model) => model.id)).toEqual(['google/gemini-pro']);
+    expect(filterModels(mockModels, { ...config, provider: 'openrouter' }).map((model) => model.id)).toEqual(['openai/gpt-4o']);
   });
 });
