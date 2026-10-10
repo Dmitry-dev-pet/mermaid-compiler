@@ -68,8 +68,11 @@ SaaS / Hybrid Storage — reconciliation 2026-09-29:
 
 ## OpenCode Go — 2026-10-10
 
-- [ ] Add a distinct Go provider, settings entry and isolated browser key storage.
-- [ ] Add the fixed Go handler for model discovery and Chat Completions in deployment and local development.
-- [ ] Preserve session identifiers through Chat / Build / Analyze / Fix and retries.
-- [ ] Exclude Go credentials from history, backups and logs; handle auth/quota/cancellation safely.
-- [ ] Pass typecheck, lint, tests and build without calling a paid model.
+- [x] Add a distinct Go provider, settings entry and isolated browser key storage.
+- [x] Add the fixed Go handler for model discovery and Chat Completions in deployment and local development.
+- [x] Preserve session identifiers through Chat / Build / Analyze / Fix and retries.
+- [x] Exclude Go credentials from history, backups and logs; handle auth/quota/cancellation safely.
+- [x] Pass typecheck, lint, tests and build without calling a paid model.
+
+
+Validation: typecheck, lint, all 307 tests and production build passed in [CI run 38090010331](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38090010331) for code commit `0362730f6b5519b35cb46ecab25efc6f8b6e0099`. Real subscription generation still requires a user-supplied key and an explicit prompt in the application.
