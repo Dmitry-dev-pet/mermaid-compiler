@@ -1,4 +1,5 @@
 import { getOpenCodeGoApiKey } from '../openCodeGoCredentials';
+import { TimeoutError } from '../llmTimeout';
 
 const ENDPOINT = '/api/opencode-go';
 
@@ -15,7 +16,8 @@ export class OpenCodeGoError extends Error {
 export const shouldStopOpenCodeGoOperation = (error: unknown): error is Error =>
   error instanceof Error && (
     error.name === 'AbortError' ||
-    (error instanceof OpenCodeGoError && error.status >= 400 && error.status < 500)
+    error instanceof TimeoutError ||
+    (error instanceof OpenCodeGoError && ((error.status >= 400 && error.status < 500) || error.status === 504))
   );
 
 const statusMessage = (status: number): string => {

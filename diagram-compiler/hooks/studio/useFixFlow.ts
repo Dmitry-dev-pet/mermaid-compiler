@@ -322,6 +322,7 @@ export const useFixFlow = (deps: FixFlowDeps) => {
         coerceToDiagramType(diagramType) ?? deps.appDiagramType ?? "auto";
       const runner = createStudioOperationRunner(
         {
+          aiConfig: deps.aiConfig,
           onLLMRequestStart: deps.onLLMRequestStart,
           getAbortSignal: deps.getAbortSignal,
         },

@@ -228,14 +228,16 @@ export const runBuildPipeline = async (
           })
         : await runLLMRequest({
             task: "build",
-            run: () =>
+            run: (signal) =>
               generateDiagram(
                 llmMessages,
                 aiConfig,
                 requestContext,
                 modelParams,
+                signal,
               ),
-            retries: buildRequestRetries,
+            retries: aiConfig.provider === "opencode-go" ? 1 : buildRequestRetries,
+            abortOnTimeout: aiConfig.provider === "opencode-go",
             timeoutMs,
             onStart: onLLMRequestStart,
           });
@@ -366,15 +368,17 @@ export const runBuildPipeline = async (
           })
         : await runLLMRequest({
             task: "auto-fix",
-            run: () =>
+            run: (signal) =>
               fixDiagram(
                 fixInput,
                 enrichedErrorMessage,
                 aiConfig,
                 fixContext,
                 modelParams,
+                signal,
               ),
-            retries: autoFixRequestRetries,
+            retries: aiConfig.provider === "opencode-go" ? 1 : autoFixRequestRetries,
+            abortOnTimeout: aiConfig.provider === "opencode-go",
             timeoutMs,
             onStart: onLLMRequestStart,
           });

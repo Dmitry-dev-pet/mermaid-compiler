@@ -12,6 +12,7 @@ import { sanitizeMermaidByType } from "../../utils/mermaidSanitizer";
 import { runLLMRequest } from "../../services/llmRequestRunner";
 import type { AIConfig } from "../../types";
 import { OpenCodeGoError } from "../../services/llm/openCodeGoClient";
+import { TimeoutError } from "../../services/llmTimeout";
 
 vi.mock("../../services/llmService", () => ({
   generateDiagram: vi.fn(),
@@ -183,7 +184,7 @@ describe("runBuildPipeline", () => {
     expect(vi.mocked(fixDiagram).mock.calls[0][3].sessionId).toBe('mermaid:project-123:main');
   });
 
-  it.each([401, 402, 403, 429])('stops Go HTTP %i before retry, fallback or auto-fix', async (status) => {
+  it.each([401, 402, 403, 429, 504])('stops Go HTTP %i before retry, fallback or auto-fix', async (status) => {
     const error = new OpenCodeGoError(status, 'Go access unavailable');
     vi.mocked(generateDiagram).mockRejectedValue(error);
     await expect(runBuildPipeline({
@@ -194,6 +195,23 @@ describe("runBuildPipeline", () => {
       allowFallback: true,
     })).rejects.toBe(error);
     expect(generateDiagram).toHaveBeenCalledTimes(1);
+    expect(fixDiagram).not.toHaveBeenCalled();
+    expect(prepareMermaid).not.toHaveBeenCalled();
+  });
+
+  it('stops an ambiguous Go timeout before another build attempt or fallback', async () => {
+    const error = new TimeoutError('LLM request timed out');
+    vi.mocked(generateDiagram).mockRejectedValue(error);
+    await expect(runBuildPipeline({
+      ...baseOptions,
+      aiConfig: { ...testAiConfig, provider: 'opencode-go' },
+      sessionId: 'mermaid:project-123:main',
+      maxAttempts: 3,
+      buildRequestRetries: 3,
+      allowFallback: true,
+    })).rejects.toBe(error);
+    expect(generateDiagram).toHaveBeenCalledTimes(1);
+    expect(runLLMRequest).toHaveBeenCalledWith(expect.objectContaining({ retries: 1, abortOnTimeout: true }));
     expect(fixDiagram).not.toHaveBeenCalled();
     expect(prepareMermaid).not.toHaveBeenCalled();
   });

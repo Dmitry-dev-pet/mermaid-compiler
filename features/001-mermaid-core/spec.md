@@ -300,6 +300,7 @@ User goal: use a personal OpenCode Go subscription for Mermaid code generation, 
 - Model-list discovery must not generate text or spend inference quota. A successful catalogue fetch alone must not be presented as proof that a key or subscription is valid.
 - Show actionable authentication, subscription/quota, timeout and unsupported-model errors without leaking request bodies or credentials.
 - Reaching a Go limit stops the operation. Do not automatically switch to Zen, another provider, another key or another model.
+- A Go timeout must abort the in-flight request and stop the operation. Do not let a timed-out inference continue in the background or launch overlapping automatic retries; syntax-validation repair remains a separate bounded request in the same conversation.
 - Explain that the provider's Use balance setting can enable paid usage after a Go limit; users who want subscription-only usage must keep it off in OpenCode Console.
 - Do not consume or move credentials owned by other applications. An actual paid-model verification remains a separate, explicit user action in Mermaid.
 - Provide the same handler for the Vercel production root and local Vite development so the configured route is real in both environments.

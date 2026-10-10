@@ -10,13 +10,14 @@ type TimeoutNotice = {
 
 type RunLLMRequestArgs<T> = {
   task: string;
-  run: () => Promise<T>;
+  run: (signal?: AbortSignal | null) => Promise<T>;
   timeoutMs?: number;
   retries?: number;
   onTimeout?: (notice: TimeoutNotice) => void;
   onStart?: (notice: LLMRequestStartNotice) => void;
   onFinish?: (notice: LLMRequestFinishNotice) => void;
   signal?: AbortSignal | null;
+  abortOnTimeout?: boolean;
 };
 
 export type LLMRequestStartNotice = {
@@ -62,11 +63,19 @@ export const runLLMRequest = async <T>(
       maxAttempts,
       startedAt,
     });
+    const attemptController = args.abortOnTimeout ? new AbortController() : null;
+    const attemptSignal = attemptController?.signal ?? args.signal;
+    const relayAbort = () => attemptController?.abort(args.signal?.reason);
+    if (attemptController && args.signal) {
+      args.signal.addEventListener("abort", relayAbort, { once: true });
+      if (args.signal.aborted) relayAbort();
+    }
     try {
+      if (attemptController?.signal.aborted) throw createAbortError();
       const result = await withTimeout(
-        args.run(),
+        args.run(attemptSignal),
         timeoutMs,
-        args.signal ?? undefined,
+        attemptSignal ?? undefined,
       );
       const finishedAt = Date.now();
       args.onFinish?.({
@@ -80,6 +89,9 @@ export const runLLMRequest = async <T>(
       });
       return result;
     } catch (error) {
+      // Abort the underlying transport before reporting the timeout or retrying.
+      // The outer operation signal stays usable for later explicit requests.
+      if (error instanceof TimeoutError) attemptController?.abort(error);
       lastError = error;
       const finishedAt = Date.now();
       const aborted = isAbortError(error);
@@ -107,6 +119,10 @@ export const runLLMRequest = async <T>(
         }
       }
       throw error;
+    } finally {
+      if (attemptController && args.signal) {
+        args.signal.removeEventListener("abort", relayAbort);
+      }
     }
   }
 

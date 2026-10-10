@@ -31,7 +31,7 @@ describe('OpenCode Go same-origin transport', () => {
     expect(getOpenCodeGoSessionId(null)).toBeUndefined();
   });
 
-  it.each([400, 401, 402, 403, 404, 413, 422, 429, 499])('stops on HTTP %i without exposing an upstream body', async (status) => {
+  it.each([400, 401, 402, 403, 404, 413, 422, 429, 499, 504])('stops on HTTP %i without exposing an upstream body', async (status) => {
     fetchMock.mockResolvedValue(Response.json({ error: 'private-go-test-key request-body-content' }, { status }));
     const error = await requestOpenCodeGo({ operation: 'models' }, 'mermaid:model-catalog').catch((value: unknown) => value);
     expect(error).toBeInstanceOf(OpenCodeGoError);

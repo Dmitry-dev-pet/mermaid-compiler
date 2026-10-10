@@ -499,8 +499,9 @@ export const requestNotebookPlan = async (args: {
         })
       : await runLLMRequest({
           task: "planner",
-          run: () => runPlanner(plannerMessage),
-          retries: NOTEBOOK_BUILD_RETRY_CONFIG.plannerTimeoutRetries,
+          run: (signal) => runPlanner(plannerMessage, signal),
+          retries: args.aiConfig.provider === "opencode-go" ? 1 : NOTEBOOK_BUILD_RETRY_CONFIG.plannerTimeoutRetries,
+          abortOnTimeout: args.aiConfig.provider === "opencode-go",
           timeoutMs: args.timeoutMs,
           onStart: args.onLLMRequestStart,
           onTimeout: (notice) => {
@@ -664,6 +665,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
       };
       const runner = createStudioOperationRunner(
         {
+          aiConfig: deps.aiConfig,
           onLLMRequestStart: deps.onLLMRequestStart,
           getAbortSignal: deps.getAbortSignal,
         },
@@ -1049,6 +1051,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
               });
               const blockRunner = createStudioOperationRunner(
                 {
+                  aiConfig: deps.aiConfig,
                   onLLMRequestStart: deps.onLLMRequestStart,
                   getAbortSignal: deps.getAbortSignal,
                 },
