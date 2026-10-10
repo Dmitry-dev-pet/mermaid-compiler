@@ -5,6 +5,8 @@ import { useLayout } from "../core/useLayout";
 import { useChat } from "../core/useChat";
 import { createStudioActions } from "./studioActions";
 import { useHistory } from "../core/useHistory";
+import { generateId } from "../../utils";
+import { getOpenCodeGoSessionId } from "../../services/llm/openCodeGoClient";
 import { getRevision } from "../../services/history/store";
 import type { ProjectBundleFile } from "../../services/history/bundle";
 import { useBuildDocs } from "./useBuildDocs";
@@ -86,6 +88,8 @@ export const useDiagramStudio = () => {
     setActiveContextId,
   } = useChat();
   const [modelParams, setModelParams] = useState<ModelParams | null>(null);
+  // A single draft scope keeps Go usable if local history cannot create a project.
+  const [draftProjectId] = useState(() => `draft-${generateId()}`);
   const {
     isHistoryReady,
     historySession,
@@ -824,6 +828,8 @@ export const useDiagramStudio = () => {
     [appState.diagramType, setDiagramType],
   );
 
+  const llmSessionId = getOpenCodeGoSessionId(historySession?.id ?? draftProjectId, activeChatContextId);
+
   const buildLLMRequestContext = useCallback(
     (args: {
       diagramType?: DiagramType;
@@ -836,6 +842,7 @@ export const useDiagramStudio = () => {
         args.allowedDiagramTypes ??
         (resolvedDiagramType === "auto" ? appState.mainDiagramTypes : null);
       return {
+        sessionId: llmSessionId,
         diagramType: resolvedDiagramType,
         allowedDiagramTypes: resolvedAllowedDiagramTypes,
         docsContext: args.docsContext,
@@ -843,10 +850,11 @@ export const useDiagramStudio = () => {
         thinkingStyle: appState.thinkingStyle,
       };
     },
-    [appState.diagramType, appState.mainDiagramTypes, appState.thinkingStyle],
+    [appState.diagramType, appState.mainDiagramTypes, appState.thinkingStyle, llmSessionId],
   );
 
   const { handleNotebookBuild } = useNotebookBuild({
+    llmSessionId,
     aiConfig,
     modelParams,
     appState,
@@ -919,6 +927,7 @@ export const useDiagramStudio = () => {
     handleFixSyntax: baseHandleFixSyntax,
     handleAnalyze,
   } = createStudioActions({
+    llmSessionId,
     aiConfig,
     connectionState,
     appState,

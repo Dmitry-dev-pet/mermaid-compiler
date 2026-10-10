@@ -6,6 +6,26 @@ import type { AgentGeminiQuotaState } from '../hooks/core/useAgentGeminiQuota';
 import { buildQuotaBadges } from './aiQuotaBadges';
 
 describe('buildQuotaBadges', () => {
+  it('never shows unrelated CLI quotas for Go', () => {
+    expect(buildQuotaBadges({
+      provider: 'opencode-go',
+      selectedModelId: 'go-model',
+      modelName: 'Go model',
+      family: 'gpt',
+      viaProviders: 'codex+antigravity',
+      cliproxyAuthFiles: [{ id: 'c1', provider: 'codex' }],
+      cliproxyQuotas: {
+        status: 'success',
+        codex: { c1: { windows: [{ id: 'primary', label: '5-hour limit', usedPercent: 10, resetLabel: '-' }] } },
+      },
+      agentCodexQuota: {
+        status: 'success',
+        windows: [{ id: 'primary', label: '5-hour limit', usedPercent: 10, remainingPercent: 90, resetLabel: '-' }],
+      },
+      agentGeminiQuota: { status: 'idle', items: [] },
+    })).toEqual([]);
+  });
+
   it('builds cliproxy gemini + antigravity badges', () => {
     const authFiles: CliproxyAuthFile[] = [
       { id: 'g1', provider: 'gemini-cli' },

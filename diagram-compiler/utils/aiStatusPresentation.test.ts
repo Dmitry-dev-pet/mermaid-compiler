@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCliproxyViaProviders, getProviderBadges } from './aiStatusPresentation';
+import { getCliproxyViaProviders, getConnectionStatusLabel, getProviderBadges } from './aiStatusPresentation';
 import type { CliproxyAuthFile } from './cliproxyAuthFileStatus';
 import type { Model } from '../types';
 
@@ -10,6 +10,22 @@ const readyFile = (provider: string): CliproxyAuthFile => ({
 });
 
 describe('aiStatusPresentation', () => {
+  it('labels catalogue discovery without claiming Go authentication or generation succeeded', () => {
+    expect(getConnectionStatusLabel('opencode-go', 'connected')).toBe('Models loaded; generation not verified');
+    expect(getConnectionStatusLabel('opencode-go', 'connecting')).toBe('Loading models…');
+    expect(getConnectionStatusLabel('opencode-go', 'failed')).toBe('Model discovery failed');
+    expect(getConnectionStatusLabel('openrouter', 'connected')).toBe('connected');
+  });
+
+  it('uses the Go provider badge even when unrelated proxy subscriptions are present', () => {
+    expect(getProviderBadges({
+      aiProvider: 'opencode-go',
+      family: 'gpt',
+      model: { id: 'model-from-go', name: 'Go model', vendor: 'openai' },
+      cliproxyAuthFiles: [readyFile('codex'), readyFile('antigravity')],
+    })).toEqual(['opencode-go']);
+  });
+
   it('returns openrouter provider badge', () => {
     expect(getProviderBadges({
       aiProvider: 'openrouter',

@@ -4,6 +4,12 @@ import type { AIConfig, ModelParams } from '../types';
 import { applySessionSettings, buildSessionSettings } from './sessionSettings';
 
 describe('sessionSettings', () => {
+  it('excludes unexpected credential fields from saved settings and exports', () => {
+    const importedConfig = { ...DEFAULT_AI_CONFIG, opencodeGoApiKey: 'must-not-export' } as AIConfig;
+    const settings = buildSessionSettings(DEFAULT_APP_STATE, importedConfig);
+    expect(JSON.stringify(settings)).not.toContain('must-not-export');
+    expect(settings.aiConfig).not.toHaveProperty('opencodeGoApiKey');
+  });
   it('buildSessionSettings includes modelParams when provided', () => {
     const modelParams: ModelParams = { temperature: 0.3, top_p: 0.9 };
     const settings = buildSessionSettings(DEFAULT_APP_STATE, DEFAULT_AI_CONFIG, modelParams);

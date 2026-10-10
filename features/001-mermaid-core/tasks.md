@@ -64,3 +64,12 @@ SaaS / Hybrid Storage — reconciliation 2026-09-29:
 ---
 
 Обновлено: 2026-09-29.
+
+
+## OpenCode Go — 2026-10-10
+
+- [ ] Add a distinct Go provider, settings entry and isolated browser key storage.
+- [ ] Add the fixed Go handler for model discovery and Chat Completions in deployment and local development.
+- [ ] Preserve session identifiers through Chat / Build / Analyze / Fix and retries.
+- [ ] Exclude Go credentials from history, backups and logs; handle auth/quota/cancellation safely.
+- [ ] Pass typecheck, lint, tests and build without calling a paid model.

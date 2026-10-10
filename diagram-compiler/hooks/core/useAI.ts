@@ -3,6 +3,7 @@ import { AIConfig, ConnectionState } from '../../types';
 import { DEFAULT_AI_CONFIG } from '../../constants';
 import { fetchModels } from '../../services/llmService';
 import { normalizeAiConfig, type LegacyAIConfig } from '../../services/aiConfigNormalization';
+import { getOpenCodeGoApiKey } from '../../services/openCodeGoCredentials';
 import { safeParse } from '../../utils';
 
 
@@ -11,6 +12,7 @@ export const useAI = () => {
     normalizeAiConfig(safeParse<LegacyAIConfig>('dc_ai_config', DEFAULT_AI_CONFIG))
   );
   const previousProviderRef = useRef(aiConfig.provider);
+  const connectionAttemptRef = useRef(0);
 
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     status: 'disconnected',
@@ -24,12 +26,19 @@ export const useAI = () => {
 
   // --- Logic ---
   const connectAI = useCallback(async () => {
+    const attempt = ++connectionAttemptRef.current;
     setConnectionState(prev => ({ ...prev, status: 'connecting', error: undefined }));
     try {
+      if (aiConfig.provider === 'opencode-go' && !getOpenCodeGoApiKey()) {
+        throw new Error('Enter your personal OpenCode Go API key to load models.');
+      }
       const models = await fetchModels(aiConfig);
+      if (attempt !== connectionAttemptRef.current) return;
       
       if (models.length === 0) {
-        throw new Error("No models found. Check endpoint/key.");
+        throw new Error(aiConfig.provider === 'opencode-go'
+          ? 'No supported Go models are available. Try loading the catalogue again.'
+          : 'No models found. Check endpoint/key.');
       }
 
       setConnectionState({
@@ -39,7 +48,7 @@ export const useAI = () => {
       
       // Auto-select first model if none selected or current not in list
       if (!aiConfig.selectedModelId || !models.find(m => m.id === aiConfig.selectedModelId)) {
-        setAiConfig(prev => ({
+        setAiConfig(prev => prev.provider !== aiConfig.provider ? prev : ({
           ...prev,
           selectedModelId: models[0].id,
           selectedModelIdByProvider: {
@@ -50,6 +59,7 @@ export const useAI = () => {
       }
 
     } catch (e: unknown) {
+      if (attempt !== connectionAttemptRef.current) return;
       const message = e instanceof Error ? e.message : String(e);
       setConnectionState({
         status: 'failed',
@@ -60,14 +70,20 @@ export const useAI = () => {
   }, [aiConfig]);
 
   const disconnectAI = useCallback(() => {
+    // Ignore a catalogue response arriving after key edits, clearing or switching.
+    connectionAttemptRef.current += 1;
     setConnectionState({ status: 'disconnected', availableModels: [] });
   }, []);
 
   // Auto-connect on mount
   useEffect(() => {
-    if (aiConfig.openRouterKey || aiConfig.agentEndpoint || aiConfig.proxyEndpoint) {
+    const shouldConnect = aiConfig.provider === 'opencode-go'
+      ? Boolean(getOpenCodeGoApiKey())
+      : Boolean(aiConfig.openRouterKey || aiConfig.agentEndpoint || aiConfig.proxyEndpoint);
+    if (shouldConnect) {
         connectAI();
     }
+    return () => { connectionAttemptRef.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -75,18 +91,21 @@ export const useAI = () => {
     const previousProvider = previousProviderRef.current;
     if (previousProvider === aiConfig.provider) return;
     previousProviderRef.current = aiConfig.provider;
+    disconnectAI();
 
     const shouldConnect =
       aiConfig.provider === 'openrouter'
         ? Boolean(aiConfig.openRouterKey)
         : aiConfig.provider === 'agent'
           ? Boolean(aiConfig.agentEndpoint)
-          : Boolean(aiConfig.proxyEndpoint);
+          : aiConfig.provider === 'opencode-go'
+            ? Boolean(getOpenCodeGoApiKey())
+            : Boolean(aiConfig.proxyEndpoint);
 
     if (shouldConnect) {
       connectAI();
     }
-  }, [aiConfig.openRouterKey, aiConfig.agentEndpoint, aiConfig.provider, aiConfig.proxyEndpoint, connectAI]);
+  }, [aiConfig.openRouterKey, aiConfig.agentEndpoint, aiConfig.provider, aiConfig.proxyEndpoint, connectAI, disconnectAI]);
 
   return {
     aiConfig,

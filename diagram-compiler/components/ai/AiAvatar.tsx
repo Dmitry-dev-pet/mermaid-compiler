@@ -19,6 +19,7 @@ export type AvatarKey =
   | 'google'
   | 'openai'
   | 'openrouter'
+  | 'opencode-go'
   | 'codex'
   | 'gemini-cli'
   | 'anthropic'
@@ -35,6 +36,9 @@ export type AvatarTooltipHandlers = {
 };
 
 export const getAvatarForKey = (key: AvatarKey) => {
+  if (key === 'opencode-go') {
+    return { kind: 'text', label: 'OpenCode Go' };
+  }
   if (key === 'antigravity') {
     return { kind: 'svg', svg: antigravitySvg, className: 'text-slate-700 dark:text-slate-300', label: 'Antigravity' };
   }

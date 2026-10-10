@@ -23,6 +23,7 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     openrouter: '',
     agent: '',
     cliproxy: '',
+    'opencode-go': '',
   },
   filtersByProvider: {
     openrouter: {
@@ -37,6 +38,9 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     },
     cliproxy: {
       family: '',
+    },
+    'opencode-go': {
+      vendor: '',
     },
   },
 };

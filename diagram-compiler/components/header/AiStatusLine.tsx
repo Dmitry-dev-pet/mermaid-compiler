@@ -10,7 +10,7 @@ import { buildModelTooltip, getModelFamilyKey, type ModelFamilyKey } from '../..
 import { buildQuotaBadges, type QuotaBadge } from '../../utils/aiQuotaBadges';
 import { AiAvatar, getAvatarForKey, type AvatarKey, type AvatarTooltipHandlers } from '../ai/AiAvatar';
 import { getModelDisplayName } from '../../utils/aiModelDisplayName';
-import { getCliproxyViaProviders, getProviderBadges } from '../../utils/aiStatusPresentation';
+import { getCliproxyViaProviders, getConnectionStatusLabel, getProviderBadges } from '../../utils/aiStatusPresentation';
 
 
 const renderQuotaBadge = (badge: QuotaBadge, tooltipHandlers: AvatarTooltipHandlers) => {
@@ -58,6 +58,12 @@ export const AiStatusLine: React.FC<AiStatusLineProps> = ({
   agentGeminiQuota,
 }) => {
   const { showTooltip, hideTooltip, portal: tooltipPortal } = useFloatingTooltip();
+  const isOpenCodeGo = aiConfig.provider === 'opencode-go';
+  const goStatusLabel = getConnectionStatusLabel(aiConfig.provider, connectionState.status);
+
+  if (isOpenCodeGo && (connectionState.status !== 'connected' || !aiConfig.selectedModelId)) {
+    return <>AI: OpenCode Go · {goStatusLabel}{connectionState.status === 'connected' ? ' · Select model' : ''}{tooltipPortal}</>;
+  }
 
   if (connectionState.status === 'disconnected') {
     return <>AI: Not connected{tooltipPortal}</>;
@@ -129,7 +135,9 @@ export const AiStatusLine: React.FC<AiStatusLineProps> = ({
         .map((badge) => `${badge.label}: ${badge.percent === null ? '-' : `${Math.round(badge.percent)}%`} avg`)
         .join('\n')
     : 'none';
-  const fullTooltip = `${modelTooltip}\nProviders: ${providerList}\nQuotas:\n${quotasText}`;
+  const fullTooltip = isOpenCodeGo
+    ? `${modelTooltip}\nProvider: OpenCode Go\n${goStatusLabel}`
+    : `${modelTooltip}\nProviders: ${providerList}\nQuotas:\n${quotasText}`;
   const fullHandlers: AvatarTooltipHandlers = {
     onMouseEnter: (event) => showTooltip(event, fullTooltip),
     onMouseMove: (event) => showTooltip(event, fullTooltip),
@@ -145,8 +153,9 @@ export const AiStatusLine: React.FC<AiStatusLineProps> = ({
             <AiAvatar avatar={avatar} tooltipHandlers={fullHandlers} />
           </React.Fragment>
         ))}
-        <AiAvatar avatar={modelAvatar} tooltipHandlers={fullHandlers} />
+        {!isOpenCodeGo || family !== 'other' ? <AiAvatar avatar={modelAvatar} tooltipHandlers={fullHandlers} /> : null}
         <span className="truncate">
+          {isOpenCodeGo ? `${goStatusLabel} · ` : ''}
           {modelName}{contextLabel}
         </span>
         {quotaBadges.length > 0 ? (

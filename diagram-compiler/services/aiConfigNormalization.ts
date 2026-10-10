@@ -7,7 +7,7 @@ type LegacyFilters = {
   experimental?: boolean;
 };
 
-export type LegacyAIConfig = Partial<AIConfig> & {
+export type LegacyAIConfig = Omit<Partial<AIConfig>, 'filtersByProvider' | 'selectedModelIdByProvider'> & {
   filters?: LegacyFilters;
   filtersByProvider?: Partial<ProviderFilters> | null;
   selectedModelIdByProvider?: Partial<Record<AIConfig['provider'], string>> | null;
@@ -38,28 +38,43 @@ const normalizeProxyFilters = (value: unknown): { family: string } => {
 
 export const normalizeAiConfig = (config: LegacyAIConfig | null | undefined): AIConfig => {
   const raw = config ?? {};
-  const { filters: legacyFilters, filtersByProvider: legacyByProvider, selectedModelIdByProvider: legacyModels, ...rest } = raw;
+  const { filters: legacyFilters, filtersByProvider: legacyByProvider, selectedModelIdByProvider: legacyModels } = raw;
 
   const openRouterDefaults = DEFAULT_AI_CONFIG.filtersByProvider.openrouter;
-
-  const openrouterFilters = {
+  const openrouterInput = {
     ...openRouterDefaults,
     ...(legacyByProvider?.openrouter ?? {}),
     ...(legacyFilters ?? {}),
   };
+  const openrouterFilters = {
+    vendor: typeof openrouterInput.vendor === 'string' ? openrouterInput.vendor : openRouterDefaults.vendor,
+    freeOnly: typeof openrouterInput.freeOnly === 'boolean' ? openrouterInput.freeOnly : openRouterDefaults.freeOnly,
+    testedOnly: typeof openrouterInput.testedOnly === 'boolean' ? openrouterInput.testedOnly : openRouterDefaults.testedOnly,
+    experimental: typeof openrouterInput.experimental === 'boolean' ? openrouterInput.experimental : openRouterDefaults.experimental,
+    minContextWindow: typeof openrouterInput.minContextWindow === 'number' && Number.isFinite(openrouterInput.minContextWindow)
+      ? openrouterInput.minContextWindow
+      : openRouterDefaults.minContextWindow,
+  };
 
   const agentFilters = normalizeProxyFilters(legacyByProvider?.agent ?? null);
   const cliproxyFilters = normalizeProxyFilters(legacyByProvider?.cliproxy ?? null);
-
-  const selectedModelIdByProvider: Record<AIConfig['provider'], string> = {
-    openrouter: '',
-    agent: '',
-    cliproxy: '',
-    ...(legacyModels ?? {}),
+  const goFilters = {
+    vendor: typeof legacyByProvider?.['opencode-go']?.vendor === 'string'
+      ? legacyByProvider['opencode-go'].vendor.trim()
+      : '',
   };
 
-  const provider = raw.provider ?? DEFAULT_AI_CONFIG.provider;
-  if (raw.selectedModelId && !selectedModelIdByProvider[provider]) {
+  const selectedModelIdByProvider: Record<AIConfig['provider'], string> = {
+    openrouter: typeof legacyModels?.openrouter === 'string' ? legacyModels.openrouter : '',
+    agent: typeof legacyModels?.agent === 'string' ? legacyModels.agent : '',
+    cliproxy: typeof legacyModels?.cliproxy === 'string' ? legacyModels.cliproxy : '',
+    'opencode-go': typeof legacyModels?.['opencode-go'] === 'string' ? legacyModels['opencode-go'] : '',
+  };
+
+  const provider = raw.provider === 'openrouter' || raw.provider === 'agent' || raw.provider === 'cliproxy' || raw.provider === 'opencode-go'
+    ? raw.provider
+    : DEFAULT_AI_CONFIG.provider;
+  if (typeof raw.selectedModelId === 'string' && raw.selectedModelId && !selectedModelIdByProvider[provider]) {
     selectedModelIdByProvider[provider] = raw.selectedModelId;
   }
 
@@ -72,16 +87,23 @@ export const normalizeAiConfig = (config: LegacyAIConfig | null | undefined): AI
     typeof raw.proxyManagementKey === 'string' ? raw.proxyManagementKey : DEFAULT_AI_CONFIG.proxyManagementKey;
 
   return {
-    ...DEFAULT_AI_CONFIG,
-    ...rest,
+    // Keep an explicit schema here: imported or legacy credential fields must not
+    // become part of the config saved to project history or backups.
     provider,
+    openRouterKey: typeof raw.openRouterKey === 'string' ? raw.openRouterKey : DEFAULT_AI_CONFIG.openRouterKey,
+    openRouterEndpoint: typeof raw.openRouterEndpoint === 'string' ? raw.openRouterEndpoint : DEFAULT_AI_CONFIG.openRouterEndpoint,
     agentToken,
+    agentEndpoint: typeof raw.agentEndpoint === 'string' ? raw.agentEndpoint : DEFAULT_AI_CONFIG.agentEndpoint,
+    proxyKey: typeof raw.proxyKey === 'string' ? raw.proxyKey : DEFAULT_AI_CONFIG.proxyKey,
     proxyManagementKey,
+    proxyEndpoint: typeof raw.proxyEndpoint === 'string' ? raw.proxyEndpoint : DEFAULT_AI_CONFIG.proxyEndpoint,
+    selectedModelId: typeof raw.selectedModelId === 'string' ? raw.selectedModelId : selectedModelIdByProvider[provider],
     selectedModelIdByProvider,
     filtersByProvider: {
       openrouter: openrouterFilters,
       agent: agentFilters,
       cliproxy: cliproxyFilters,
+      'opencode-go': goFilters,
     },
   };
 };

@@ -37,6 +37,7 @@ import {
   parseNotebookPlan,
 } from "../../services/notebookPlanService";
 import type { LLMRequestContext } from "../../services/llm/types";
+import { shouldStopOpenCodeGoOperation } from "../../services/llm/openCodeGoClient";
 import { runLLMRequest } from "../../services/llmRequestRunner";
 import { TimeoutError } from "../../services/llmTimeout";
 import { formatTimeoutRetryMessage } from "./stepMessageUtils";
@@ -59,6 +60,7 @@ const NOTEBOOK_STYLE_CONSTRAINT_RU =
   "Без стилевых директив и цветовых инструкций (без theme/look/init/colors).";
 
 type NotebookBuildDeps = {
+  llmSessionId?: string;
   aiConfig: import("../../types").AIConfig;
   modelParams: ModelParams | null;
   appState: import("../../types").AppState;
@@ -408,6 +410,7 @@ type PlannerRunner = (
 ) => Promise<string>;
 
 export const requestNotebookPlan = async (args: {
+  sessionId?: string;
   aiConfig: import("../../types").AIConfig;
   modelParams: ModelParams | null;
   prompt: string;
@@ -445,6 +448,7 @@ export const requestNotebookPlan = async (args: {
               language: args.language,
             })
           : {
+              sessionId: args.sessionId,
               diagramType: args.forcedDiagramType ?? "auto",
               allowedDiagramTypes: args.allowedDiagramTypes ?? null,
               docsContext: args.docs,
@@ -848,6 +852,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
           kind: "planner",
         });
         plan = await requestNotebookPlan({
+          sessionId: deps.llmSessionId,
           aiConfig: deps.aiConfig,
           modelParams: deps.modelParams,
           prompt: prompt.content,
@@ -1058,6 +1063,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
                 },
               );
               const buildResult = await runBuildPipeline({
+                sessionId: deps.llmSessionId,
                 aiConfig: deps.aiConfig,
                 modelParams: deps.modelParams,
                 diagramType: targetDiagramType,
@@ -1295,6 +1301,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
                 });
               }
             } catch (e: unknown) {
+              if (deps.aiConfig.provider === 'opencode-go' && shouldStopOpenCodeGoOperation(e)) throw e;
               lastError = e instanceof Error ? e.message : String(e);
               if (
                 e instanceof TimeoutError &&

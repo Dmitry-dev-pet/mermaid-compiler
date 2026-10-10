@@ -63,3 +63,12 @@ SaaS / Hybrid Storage — reconciled 2026-09-29:
 ---
 
 Обновлено: 2026-09-29.
+
+
+## OpenCode Go — 2026-10-10
+
+42. [ ] Add the personal OpenCode Go provider and isolated browser credential setting.
+43. [ ] Add a fixed-destination, non-persistent Go request handler with client/session identification.
+44. [ ] Wire Go model discovery and stable conversation IDs through all studio operations.
+45. [ ] Verify provider/handler behavior with mocked upstream requests and run application quality checks.
+46. [ ] Keep real subscription verification explicit and separate from catalogue discovery.

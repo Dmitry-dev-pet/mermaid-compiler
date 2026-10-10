@@ -34,7 +34,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -49,6 +49,7 @@ describe('requestNotebookPlan', () => {
           cliproxy: {
             family: '',
           },
+          'opencode-go': { vendor: '' },
         },
       },
       modelParams: null,
@@ -84,7 +85,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -99,6 +100,7 @@ describe('requestNotebookPlan', () => {
           cliproxy: {
             family: '',
           },
+          'opencode-go': { vendor: '' },
         },
       },
       modelParams: null,
@@ -134,7 +136,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -149,6 +151,7 @@ describe('requestNotebookPlan', () => {
           cliproxy: {
             family: '',
           },
+          'opencode-go': { vendor: '' },
         },
       },
       modelParams: null,

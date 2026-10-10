@@ -1,4 +1,4 @@
-export type Provider = 'openrouter' | 'agent' | 'cliproxy';
+export type Provider = 'openrouter' | 'agent' | 'cliproxy' | 'opencode-go';
 
 export type DiagramType =
   'auto'
@@ -49,10 +49,15 @@ export interface CliproxyFilters {
   family: string;
 }
 
+export interface OpenCodeGoFilters {
+  vendor: string;
+}
+
 export type ProviderFilters = {
   openrouter: OpenRouterFilters;
   agent: CliproxyFilters;
   cliproxy: CliproxyFilters;
+  'opencode-go': OpenCodeGoFilters;
 };
 
 export interface AIConfig {

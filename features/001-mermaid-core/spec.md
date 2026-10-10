@@ -285,3 +285,22 @@ C. **Route Guard & Deep Linking (слой входа)**
 ---
 
 Обновлено: 2026-09-29.
+
+
+## OpenCode Go — 2026-10-10
+
+User goal: use a personal OpenCode Go subscription for Mermaid code generation, discussion, validation repair and analysis.
+
+- Add a distinct `opencode-go` LLM provider; preserve existing provider behavior and local project storage.
+- Use the documented Go API only, initially for models served by its Chat Completions endpoint. Load the available models from the Go model catalogue and exclude models requiring Responses or Messages until those transports are implemented.
+- The user enters a personal Go API key in a masked settings field. Store it only in its own browser localStorage entry; never include it in AIConfig, project/session history, backups, operation logs or source code.
+- The browser sends that key only to a same-origin Go handler. The handler forwards each request to a fixed official Go endpoint, supplies an honest Mermaid Compiler User-Agent and stable `x-opencode-session`, and does not store credentials or request contents.
+- Keep the conversation identifier stable across Chat, Build, Analyze, Fix and retries within one project/conversation.
+- The handler accepts only model-list and Chat Completions requests; arbitrary destinations, headers, tool execution and application-controlled billing fallback are out of scope.
+- Model-list discovery must not generate text or spend inference quota. A successful catalogue fetch alone must not be presented as proof that a key or subscription is valid.
+- Show actionable authentication, subscription/quota, timeout and unsupported-model errors without leaking request bodies or credentials.
+- Reaching a Go limit stops the operation. Do not automatically switch to Zen, another provider, another key or another model.
+- Explain that the provider's Use balance setting can enable paid usage after a Go limit; users who want subscription-only usage must keep it off in OpenCode Console.
+- Do not consume or move credentials owned by other applications. An actual paid-model verification remains a separate, explicit user action in Mermaid.
+- Provide the same handler for the Vercel production root and local Vite development so the configured route is real in both environments.
+- Acceptance: provider selection, key exclusion from project exports, model discovery, stable session forwarding, cancellation/error handling and regression tests for existing flows; typecheck, lint, tests and build.
