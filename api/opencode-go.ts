@@ -1,4 +1,4 @@
-import { handleOpenCodeGo } from '../diagram-compiler/server/openCodeGoHandler';
+import { handleOpenCodeGo } from '../diagram-compiler/server/openCodeGoHandler.js';
 
 // Web Request/Response entrypoint; only this root api directory is deployed by Vercel.
 export const POST = handleOpenCodeGo;
