@@ -73,5 +73,16 @@ SaaS / Hybrid Storage — reconciled 2026-09-29:
 45. [x] Verify provider/handler behavior with mocked upstream requests and run application quality checks.
 46. [x] Keep real subscription verification explicit and separate from catalogue discovery.
 
-
 Validation: typecheck, lint, all 307 tests and production build passed in [CI run 38090010331](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38090010331) for code commit `0362730f6b5519b35cb46ecab25efc6f8b6e0099`. Real subscription generation still requires a user-supplied key and an explicit prompt in the application.
+
+## Direct ChatGPT subscription — 2026-10-11
+
+47. [x] Add the local SIWC registration/session store and validated browser OAuth flow.
+48. [x] Add account model discovery and completed-only Responses streaming with cancellation.
+49. [x] Serve the local editor through a protected same-origin Mermaid Agent API.
+50. [x] Integrate the ChatGPT provider, login/account controls and honest subscription status into the SPA.
+51. [ ] Verify security/lifecycle boundaries and existing application behavior, then package the local Agent and built editor.
+52. [ ] Verify the user's real browser sign-in and first diagram after local launch.
+
+
+Validation in progress: 102 local Node tests pass with synthetic OAuth/API responses. Full application CI and the runnable package remain to be checked; the user's real browser sign-in and generation remain a separate acceptance step.

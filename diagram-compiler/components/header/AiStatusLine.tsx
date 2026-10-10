@@ -5,12 +5,13 @@ import type { CliproxyManagementInfo } from '../../hooks/core/useCliproxyManagem
 import type { CliproxyQuotasState } from '../../services/cliproxy/quotas/types';
 import type { AgentCodexQuotaState } from '../../hooks/core/useAgentCodexQuota';
 import type { AgentGeminiQuotaState } from '../../hooks/core/useAgentGeminiQuota';
+import type { ChatGptStatus } from '../../services/chatGptClient';
 import type { CliproxyAuthFile } from '../../services/cliproxy/types';
-import { buildModelTooltip, getModelFamilyKey, type ModelFamilyKey } from '../../utils/aiModelUtils';
+import { buildModelTooltip, getModelFamilyKey } from '../../utils/aiModelUtils';
 import { buildQuotaBadges, type QuotaBadge } from '../../utils/aiQuotaBadges';
 import { AiAvatar, getAvatarForKey, type AvatarKey, type AvatarTooltipHandlers } from '../ai/AiAvatar';
 import { getModelDisplayName } from '../../utils/aiModelDisplayName';
-import { getCliproxyViaProviders, getConnectionStatusLabel, getProviderBadges } from '../../utils/aiStatusPresentation';
+import { getChatGptStatusLabel, getCliproxyViaProviders, getConnectionStatusLabel, getProviderBadges } from '../../utils/aiStatusPresentation';
 
 
 const renderQuotaBadge = (badge: QuotaBadge, tooltipHandlers: AvatarTooltipHandlers) => {
@@ -47,6 +48,9 @@ export type AiStatusLineProps = {
   cliproxyQuotas: CliproxyQuotasState;
   agentCodexQuota: AgentCodexQuotaState;
   agentGeminiQuota: AgentGeminiQuotaState;
+  chatGptStatus?: ChatGptStatus | null;
+  chatGptIsLocal?: boolean;
+  chatGptLoading?: boolean;
 };
 
 export const AiStatusLine: React.FC<AiStatusLineProps> = ({
@@ -56,10 +60,50 @@ export const AiStatusLine: React.FC<AiStatusLineProps> = ({
   cliproxyQuotas,
   agentCodexQuota,
   agentGeminiQuota,
+  chatGptStatus = null,
+  chatGptIsLocal = false,
+  chatGptLoading = false,
 }) => {
   const { showTooltip, hideTooltip, portal: tooltipPortal } = useFloatingTooltip();
   const isOpenCodeGo = aiConfig.provider === 'opencode-go';
   const goStatusLabel = getConnectionStatusLabel(aiConfig.provider, connectionState.status);
+
+  if (aiConfig.provider === 'chatgpt') {
+    const model = chatGptStatus?.connected && connectionState.status === 'connected'
+      ? connectionState.availableModels.find((entry) => entry.id === aiConfig.selectedModelId)
+      : null;
+    const account = chatGptStatus?.accounts.find((entry) => entry.id === chatGptStatus.activeAccountId);
+    let label = getChatGptStatusLabel(chatGptStatus, chatGptIsLocal, aiConfig.selectedModelId);
+    if (chatGptIsLocal && chatGptLoading && !chatGptStatus) label = 'Checking account…';
+    if (chatGptStatus?.connected && chatGptStatus.login?.state !== 'pending' && chatGptStatus.usage.state === 'unverified') {
+      if (connectionState.status === 'connected') label = 'Models loaded; generation not verified';
+      else if (connectionState.status === 'connecting') label = 'Loading models…';
+      else if (connectionState.status === 'failed') label = 'Model discovery failed';
+    }
+    const tooltip = [
+      'ChatGPT subscription',
+      account?.email,
+      label,
+      chatGptStatus?.usage.message,
+      chatGptStatus?.usage.state === 'available' && chatGptStatus.usage.model
+        ? `Last verified model: ${chatGptStatus.usage.model}`
+        : null,
+    ].filter(Boolean).join('\n');
+    const handlers: AvatarTooltipHandlers = {
+      onMouseEnter: (event) => showTooltip(event, tooltip),
+      onMouseMove: (event) => showTooltip(event, tooltip),
+      onMouseLeave: hideTooltip,
+    };
+    return (
+      <>
+        {tooltipPortal}
+        <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap" {...handlers}>
+          <AiAvatar avatar={getAvatarForKey('chatgpt')} tooltipHandlers={handlers} />
+          <span className="truncate">{model ? `${getModelDisplayName(model)} · ` : 'ChatGPT · '}{label}</span>
+        </span>
+      </>
+    );
+  }
 
   if (isOpenCodeGo && (connectionState.status !== 'connected' || !aiConfig.selectedModelId)) {
     return <>AI: OpenCode Go · {goStatusLabel}{connectionState.status === 'connected' ? ' · Select model' : ''}{tooltipPortal}</>;
@@ -105,11 +149,6 @@ export const AiStatusLine: React.FC<AiStatusLineProps> = ({
     cliproxyAuthFiles: (cliproxyInfo.cliproxyAuthFiles ?? []) as CliproxyAuthFile[],
   }) as AvatarKey[];
   const providerAvatars = providerKeys.map((key) => getAvatarForKey(key));
-  const tooltipHandlers = (label: string): AvatarTooltipHandlers => ({
-    onMouseEnter: (event) => showTooltip(event, label),
-    onMouseMove: (event) => showTooltip(event, label),
-    onMouseLeave: hideTooltip,
-  });
   const ownerOverride = model?.ownedBy === 'antigravity' && viaProviders.length > 1
     ? `via ${viaProviders.join(' + ')}`
     : (model?.ownedBy ?? null);

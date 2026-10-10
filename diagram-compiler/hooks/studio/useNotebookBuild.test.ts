@@ -19,7 +19,7 @@ const buildRawPlan = (count: number) => {
 };
 
 describe('requestNotebookPlan', () => {
-  it('aborts a slow Go planner call without timeout or count retries', async () => {
+  it.each(['opencode-go', 'chatgpt'] as const)('aborts a slow %s planner call without timeout or count retries', async (provider) => {
     vi.useFakeTimers();
     try {
       const signals: AbortSignal[] = [];
@@ -31,7 +31,7 @@ describe('requestNotebookPlan', () => {
         });
       });
       const request = requestNotebookPlan({
-        aiConfig: { ...DEFAULT_AI_CONFIG, provider: 'opencode-go' },
+        aiConfig: { ...DEFAULT_AI_CONFIG, provider },
         sessionId: 'mermaid:project-123:main',
         modelParams: null,
         prompt: 'Build one diagram',
@@ -70,7 +70,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '', chatgpt: '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -86,6 +86,7 @@ describe('requestNotebookPlan', () => {
             family: '',
           },
           'opencode-go': { vendor: '' },
+          chatgpt: { vendor: '' },
         },
       },
       modelParams: null,
@@ -121,7 +122,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '', chatgpt: '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -137,6 +138,7 @@ describe('requestNotebookPlan', () => {
             family: '',
           },
           'opencode-go': { vendor: '' },
+          chatgpt: { vendor: '' },
         },
       },
       modelParams: null,
@@ -172,7 +174,7 @@ describe('requestNotebookPlan', () => {
         proxyManagementKey: '',
         proxyEndpoint: '',
         selectedModelId: '',
-        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '' },
+        selectedModelIdByProvider: { openrouter: '', agent: '', cliproxy: '', 'opencode-go': '', chatgpt: '' },
         filtersByProvider: {
           openrouter: {
             vendor: '',
@@ -188,6 +190,7 @@ describe('requestNotebookPlan', () => {
             family: '',
           },
           'opencode-go': { vendor: '' },
+          chatgpt: { vendor: '' },
         },
       },
       modelParams: null,

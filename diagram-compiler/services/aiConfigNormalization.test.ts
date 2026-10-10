@@ -13,9 +13,10 @@ describe('normalizeAiConfig', () => {
     });
     expect(normalized.selectedModelId).toBe('proxy-model');
     expect(normalized.selectedModelIdByProvider).toEqual({
-      openrouter: 'openrouter-model', agent: '', cliproxy: 'proxy-model', 'opencode-go': '',
+      openrouter: 'openrouter-model', agent: '', cliproxy: 'proxy-model', 'opencode-go': '', chatgpt: '',
     });
     expect(normalized.filtersByProvider['opencode-go']).toEqual({ vendor: '' });
+    expect(normalized.filtersByProvider.chatgpt).toEqual({ vendor: '' });
     expect(normalized.filtersByProvider.cliproxy).toEqual({ family: 'gpt' });
     expect(normalized.filtersByProvider.openrouter.freeOnly).toBe(false);
   });
@@ -26,13 +27,14 @@ describe('normalizeAiConfig', () => {
       provider: 'opencode-go',
       selectedModelId: 'go-model',
       selectedModelIdByProvider: {
-        openrouter: 'openrouter-model', agent: 'agent-model', cliproxy: 'proxy-model', 'opencode-go': 'go-model',
+        openrouter: 'openrouter-model', agent: 'agent-model', cliproxy: 'proxy-model', 'opencode-go': 'go-model', chatgpt: 'chatgpt-model',
       },
       filtersByProvider: {
         ...DEFAULT_AI_CONFIG.filtersByProvider,
         openrouter: { ...DEFAULT_AI_CONFIG.filtersByProvider.openrouter, vendor: 'openai' },
         cliproxy: { family: 'claude' },
         'opencode-go': { vendor: 'moonshotai' },
+        chatgpt: { vendor: 'openai' },
       },
     });
     expect(normalizeAiConfig(JSON.parse(JSON.stringify(config)) as LegacyAIConfig)).toEqual(config);
@@ -40,6 +42,32 @@ describe('normalizeAiConfig', () => {
     expect(config.filtersByProvider.openrouter.vendor).toBe('openai');
     expect(config.filtersByProvider.cliproxy.family).toBe('claude');
     expect(config.selectedModelIdByProvider.agent).toBe('agent-model');
+    expect(config.selectedModelIdByProvider.chatgpt).toBe('chatgpt-model');
+    expect(config.filtersByProvider.chatgpt).toEqual({ vendor: 'openai' });
+  });
+
+  it('persists ChatGPT model preferences without OAuth or account data', () => {
+    const marker = 'synthetic-oauth-never-persist';
+    const config = normalizeAiConfig(JSON.parse(JSON.stringify({
+      ...DEFAULT_AI_CONFIG,
+      provider: 'chatgpt',
+      selectedModelId: 'subscription-model',
+      chatGptAccountId: marker,
+      accessToken: marker,
+      refreshToken: marker,
+      idToken: marker,
+      chatgpt: { accounts: [{ id: marker }], clientSecret: marker },
+      filtersByProvider: {
+        ...DEFAULT_AI_CONFIG.filtersByProvider,
+        chatgpt: { vendor: 'openai', accessToken: marker },
+      },
+      selectedModelIdByProvider: { ...DEFAULT_AI_CONFIG.selectedModelIdByProvider, chatgpt: 'subscription-model', token: marker },
+    })));
+    expect(config.provider).toBe('chatgpt');
+    expect(config.selectedModelIdByProvider.chatgpt).toBe('subscription-model');
+    expect(config.filtersByProvider.chatgpt).toEqual({ vendor: 'openai' });
+    expect(JSON.stringify(config)).not.toContain(marker);
+    expect(Object.keys(config).sort()).toEqual(Object.keys(DEFAULT_AI_CONFIG).sort());
   });
 
   it('drops unrecognized credential fields instead of copying them into persisted config', () => {

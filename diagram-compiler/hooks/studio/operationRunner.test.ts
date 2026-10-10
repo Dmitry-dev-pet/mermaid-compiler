@@ -30,12 +30,12 @@ vi.mock('../../services/llmRequestRunner', () => ({
 }));
 
 describe('createStudioOperationRunner', () => {
-  it('uses one cancellable attempt for Go and forwards the child attempt signal', async () => {
+  it.each(['opencode-go', 'chatgpt'] as const)('uses one cancellable attempt for %s and forwards the child attempt signal', async (provider) => {
     const parent = new AbortController();
     const child = new AbortController();
     const run = vi.fn(async () => 'ok');
     const runner = createStudioOperationRunner({
-      aiConfig: { provider: 'opencode-go' },
+      aiConfig: { provider },
       getAbortSignal: () => parent.signal,
     }, { logEvent: vi.fn() });
 

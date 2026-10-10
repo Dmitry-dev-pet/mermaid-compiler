@@ -63,15 +63,21 @@ export const normalizeAiConfig = (config: LegacyAIConfig | null | undefined): AI
       ? legacyByProvider['opencode-go'].vendor.trim()
       : '',
   };
+  const chatGptFilters = {
+    vendor: typeof legacyByProvider?.chatgpt?.vendor === 'string'
+      ? legacyByProvider.chatgpt.vendor.trim()
+      : '',
+  };
 
   const selectedModelIdByProvider: Record<AIConfig['provider'], string> = {
     openrouter: typeof legacyModels?.openrouter === 'string' ? legacyModels.openrouter : '',
     agent: typeof legacyModels?.agent === 'string' ? legacyModels.agent : '',
     cliproxy: typeof legacyModels?.cliproxy === 'string' ? legacyModels.cliproxy : '',
     'opencode-go': typeof legacyModels?.['opencode-go'] === 'string' ? legacyModels['opencode-go'] : '',
+    chatgpt: typeof legacyModels?.chatgpt === 'string' ? legacyModels.chatgpt : '',
   };
 
-  const provider = raw.provider === 'openrouter' || raw.provider === 'agent' || raw.provider === 'cliproxy' || raw.provider === 'opencode-go'
+  const provider = raw.provider === 'openrouter' || raw.provider === 'agent' || raw.provider === 'cliproxy' || raw.provider === 'opencode-go' || raw.provider === 'chatgpt'
     ? raw.provider
     : DEFAULT_AI_CONFIG.provider;
   if (typeof raw.selectedModelId === 'string' && raw.selectedModelId && !selectedModelIdByProvider[provider]) {
@@ -104,6 +110,7 @@ export const normalizeAiConfig = (config: LegacyAIConfig | null | undefined): AI
       agent: agentFilters,
       cliproxy: cliproxyFilters,
       'opencode-go': goFilters,
+      chatgpt: chatGptFilters,
     },
   };
 };

@@ -392,6 +392,7 @@ ${code}
       (resolvedDiagramType === "auto" ? deps.appState.mainDiagramTypes : null);
     return {
       sessionId: deps.llmSessionId,
+      chatGptAccountId: deps.connectionState.chatGptAccountId,
       diagramType: resolvedDiagramType,
       allowedDiagramTypes: resolvedAllowedDiagramTypes,
       docsContext: args.docsContext,

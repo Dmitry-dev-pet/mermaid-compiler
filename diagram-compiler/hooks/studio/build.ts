@@ -166,6 +166,7 @@ export const createBuildHandler = (ctx: StudioContext) => {
           const attemptNotes: string[] = [];
           const buildResult = await runBuildPipeline({
             sessionId: ctx.llmSessionId,
+            chatGptAccountId: ctx.connectionState.chatGptAccountId,
             aiConfig: ctx.aiConfig,
             modelParams: ctx.modelParams,
             diagramType: ctx.appState.diagramType,

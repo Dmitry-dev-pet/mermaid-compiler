@@ -25,6 +25,7 @@ describe('modelFilter', () => {
       agent: '',
       cliproxy: '',
       'opencode-go': '',
+      chatgpt: '',
     },
     filtersByProvider: {
       openrouter: {
@@ -43,6 +44,7 @@ describe('modelFilter', () => {
       'opencode-go': {
         vendor: '',
       },
+      chatgpt: { vendor: '' },
     },
   };
 
@@ -145,5 +147,20 @@ describe('modelFilter', () => {
     };
     expect(filterModels(mockModels, config).map((model) => model.id)).toEqual(['google/gemini-pro']);
     expect(filterModels(mockModels, { ...config, provider: 'openrouter' }).map((model) => model.id)).toEqual(['openai/gpt-4o']);
+  });
+  it('keeps ChatGPT models visible independently of paid/free and proxy filters', () => {
+    const config: AIConfig = {
+      ...baseConfig,
+      provider: 'chatgpt',
+      filtersByProvider: {
+        ...baseConfig.filtersByProvider,
+        openrouter: { ...baseConfig.filtersByProvider.openrouter, freeOnly: true, testedOnly: true, vendor: 'google' },
+        cliproxy: { family: 'claude' },
+        'opencode-go': { vendor: 'zai' },
+        chatgpt: { vendor: 'openai' },
+      },
+    };
+    expect(filterModels(mockModels, config).map((model) => model.id)).toEqual(['openai/gpt-4o']);
+    expect(filterModels(mockModels, { ...config, provider: 'openrouter' }).map((model) => model.id)).toEqual(['google/gemini-pro']);
   });
 });

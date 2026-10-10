@@ -24,6 +24,7 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     agent: '',
     cliproxy: '',
     'opencode-go': '',
+    chatgpt: '',
   },
   filtersByProvider: {
     openrouter: {
@@ -40,6 +41,9 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
       family: '',
     },
     'opencode-go': {
+      vendor: '',
+    },
+    chatgpt: {
       vendor: '',
     },
   },

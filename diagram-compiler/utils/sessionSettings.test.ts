@@ -10,6 +10,29 @@ describe('sessionSettings', () => {
     expect(JSON.stringify(settings)).not.toContain('must-not-export');
     expect(settings.aiConfig).not.toHaveProperty('opencodeGoApiKey');
   });
+  it('does not export or restore imported ChatGPT credentials or active-account metadata', () => {
+    const marker = 'synthetic-oauth-not-for-projects';
+    const importedConfig = {
+      ...DEFAULT_AI_CONFIG,
+      provider: 'chatgpt',
+      accessToken: marker,
+      refreshToken: marker,
+      idToken: marker,
+      chatGptAccountId: marker,
+      chatGptSession: { token: marker },
+    } as AIConfig;
+    const settings = buildSessionSettings(DEFAULT_APP_STATE, importedConfig);
+    expect(settings.aiConfig.provider).toBe('chatgpt');
+    expect(JSON.stringify(settings)).not.toContain(marker);
+    let restored = DEFAULT_AI_CONFIG;
+    applySessionSettings(
+      { appState: DEFAULT_APP_STATE, aiConfig: importedConfig },
+      () => {},
+      (next) => { restored = typeof next === 'function' ? next(restored) : next; },
+    );
+    expect(restored.provider).toBe('chatgpt');
+    expect(JSON.stringify(restored)).not.toContain(marker);
+  });
   it('buildSessionSettings includes modelParams when provided', () => {
     const modelParams: ModelParams = { temperature: 0.3, top_p: 0.9 };
     const settings = buildSessionSettings(DEFAULT_APP_STATE, DEFAULT_AI_CONFIG, modelParams);

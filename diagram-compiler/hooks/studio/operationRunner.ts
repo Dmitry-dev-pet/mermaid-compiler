@@ -1,5 +1,6 @@
 import type { OperationPhase } from "../../types";
 import { runLLMRequest } from "../../services/llmRequestRunner";
+import { isSubscriptionProvider } from "../../services/subscriptionPolicy";
 import type { LLMRequestStartNotice } from "../../services/llmRequestRunner";
 import type { LLMRequestFinishNotice } from "../../services/llmRequestRunner";
 import type { StudioContext } from "./actionsContext";
@@ -50,13 +51,13 @@ export const createStudioOperationRunner = (
     let stageStarted = false;
     let contextLogged = false;
     const signal = args.signal ?? ctx.getAbortSignal?.() ?? undefined;
-    const isOpenCodeGo = ctx.aiConfig?.provider === "opencode-go";
+    const subscription = isSubscriptionProvider(ctx.aiConfig?.provider);
 
     return runLLMRequest({
       task: args.task,
       run: (attemptSignal) => args.run(attemptSignal ?? signal ?? undefined),
-      retries: isOpenCodeGo ? 1 : args.retries,
-      abortOnTimeout: isOpenCodeGo,
+      retries: subscription ? 1 : args.retries,
+      abortOnTimeout: subscription,
       timeoutMs: args.timeoutMs,
       signal,
       onStart: (notice) => {

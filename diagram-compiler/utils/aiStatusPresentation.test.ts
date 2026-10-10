@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getCliproxyViaProviders, getConnectionStatusLabel, getProviderBadges } from './aiStatusPresentation';
+import { getChatGptStatusLabel, getCliproxyViaProviders, getConnectionStatusLabel, getProviderBadges } from './aiStatusPresentation';
+import type { ChatGptStatus } from '../services/chatGptClient';
 import type { CliproxyAuthFile } from './cliproxyAuthFileStatus';
 import type { Model } from '../types';
 
@@ -10,6 +11,37 @@ const readyFile = (provider: string): CliproxyAuthFile => ({
 });
 
 describe('aiStatusPresentation', () => {
+  const chatGptStatus: ChatGptStatus = {
+    agent: 'mermaid-chatgpt',
+    protocolVersion: 1,
+    connected: true,
+    activeAccountId: 'account-a',
+    accounts: [{ id: 'account-a', email: 'test@example.com', connected: true }],
+    login: null,
+    usage: { state: 'unverified' },
+  };
+
+  it('separates ChatGPT sign-in, discovery, successful generation and subscription limits', () => {
+    expect(getConnectionStatusLabel('chatgpt', 'connected')).toBe('Models loaded; generation not verified');
+    expect(getChatGptStatusLabel(chatGptStatus)).toBe('Signed in; generation not verified');
+    expect(getChatGptStatusLabel({ ...chatGptStatus, usage: { state: 'available', model: 'model-a' } }, true, 'model-a')).toBe('Generation verified');
+    expect(getChatGptStatusLabel({ ...chatGptStatus, usage: { state: 'available', model: 'model-a' } }, true, 'model-b')).toBe('Selected model not verified');
+    expect(getChatGptStatusLabel({ ...chatGptStatus, usage: { state: 'limit_reached' } })).toBe('Subscription limit reached');
+    expect(getChatGptStatusLabel({ ...chatGptStatus, usage: { state: 'unavailable' } })).toBe('Subscription usage unavailable');
+    expect(getChatGptStatusLabel({ ...chatGptStatus, connected: false })).toBe('Sign in with ChatGPT');
+    expect(getChatGptStatusLabel({ ...chatGptStatus, login: { id: 'login-a', state: 'pending' } })).toBe('Waiting for browser sign-in');
+    expect(getChatGptStatusLabel(null, false)).toBe('Open the local workspace');
+  });
+
+  it('identifies direct ChatGPT separately from Codex and proxy subscriptions', () => {
+    expect(getProviderBadges({
+      aiProvider: 'chatgpt',
+      family: 'gpt',
+      model: { id: 'model-from-chatgpt', name: 'Account model', vendor: 'openai' },
+      cliproxyAuthFiles: [readyFile('codex'), readyFile('antigravity')],
+    })).toEqual(['chatgpt']);
+  });
+
   it('labels catalogue discovery without claiming Go authentication or generation succeeded', () => {
     expect(getConnectionStatusLabel('opencode-go', 'connected')).toBe('Models loaded; generation not verified');
     expect(getConnectionStatusLabel('opencode-go', 'connecting')).toBe('Loading models…');

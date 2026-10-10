@@ -4,13 +4,18 @@ import { DEFAULT_AI_CONFIG } from '../../constants';
 import { fetchModels } from '../../services/llmService';
 import { normalizeAiConfig, type LegacyAIConfig } from '../../services/aiConfigNormalization';
 import { getOpenCodeGoApiKey } from '../../services/openCodeGoCredentials';
+import { getChatGptModelCatalog, isChatGptAgentOrigin } from '../../services/chatGptClient';
 import { safeParse } from '../../utils';
 
 
 export const useAI = () => {
-  const [aiConfig, setAiConfig] = useState<AIConfig>(() =>
-    normalizeAiConfig(safeParse<LegacyAIConfig>('dc_ai_config', DEFAULT_AI_CONFIG))
-  );
+  const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
+    const saved = normalizeAiConfig(safeParse<LegacyAIConfig>('dc_ai_config', DEFAULT_AI_CONFIG));
+    if (isChatGptAgentOrigin() && new URLSearchParams(window.location.search).get('ai') === 'chatgpt') {
+      return { ...saved, provider: 'chatgpt', selectedModelId: saved.selectedModelIdByProvider.chatgpt };
+    }
+    return saved;
+  });
   const previousProviderRef = useRef(aiConfig.provider);
   const connectionAttemptRef = useRef(0);
 
@@ -32,18 +37,22 @@ export const useAI = () => {
       if (aiConfig.provider === 'opencode-go' && !getOpenCodeGoApiKey()) {
         throw new Error('Enter your personal OpenCode Go API key to load models.');
       }
-      const models = await fetchModels(aiConfig);
+      const chatGptCatalog = aiConfig.provider === 'chatgpt' ? await getChatGptModelCatalog() : null;
+      const models = chatGptCatalog ? chatGptCatalog.models : await fetchModels(aiConfig);
       if (attempt !== connectionAttemptRef.current) return;
       
       if (models.length === 0) {
         throw new Error(aiConfig.provider === 'opencode-go'
           ? 'No supported Go models are available. Try loading the catalogue again.'
-          : 'No models found. Check endpoint/key.');
+          : aiConfig.provider === 'chatgpt'
+            ? 'No ChatGPT models are available for this account. Check its access and reload.'
+            : 'No models found. Check endpoint/key.');
       }
 
       setConnectionState({
         status: 'connected',
-        availableModels: models
+        availableModels: models,
+        ...(chatGptCatalog ? { chatGptAccountId: chatGptCatalog.accountId } : {}),
       });
       
       // Auto-select first model if none selected or current not in list
@@ -77,7 +86,8 @@ export const useAI = () => {
 
   // Auto-connect on mount
   useEffect(() => {
-    const shouldConnect = aiConfig.provider === 'opencode-go'
+    // ChatGPT's account hook connects only after the local Agent confirms a signed-in account.
+    const shouldConnect = aiConfig.provider === 'chatgpt' ? false : aiConfig.provider === 'opencode-go'
       ? Boolean(getOpenCodeGoApiKey())
       : Boolean(aiConfig.openRouterKey || aiConfig.agentEndpoint || aiConfig.proxyEndpoint);
     if (shouldConnect) {
@@ -94,7 +104,9 @@ export const useAI = () => {
     disconnectAI();
 
     const shouldConnect =
-      aiConfig.provider === 'openrouter'
+      aiConfig.provider === 'chatgpt'
+        ? false
+        : aiConfig.provider === 'openrouter'
         ? Boolean(aiConfig.openRouterKey)
         : aiConfig.provider === 'agent'
           ? Boolean(aiConfig.agentEndpoint)
