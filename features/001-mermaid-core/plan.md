@@ -81,8 +81,8 @@ Validation: typecheck, lint, all 307 tests and production build passed in [CI ru
 48. [x] Add account model discovery and completed-only Responses streaming with cancellation.
 49. [x] Serve the local editor through a protected same-origin Mermaid Agent API.
 50. [x] Integrate the ChatGPT provider, login/account controls and honest subscription status into the SPA.
-51. [ ] Verify security/lifecycle boundaries and existing application behavior, then package the local Agent and built editor.
+51. [x] Verify security/lifecycle boundaries and existing application behavior, then package the local Agent and built editor.
 52. [ ] Verify the user's real browser sign-in and first diagram after local launch.
 
 
-Validation in progress: 102 local Node tests pass with synthetic OAuth/API responses. Full application CI and the runnable package remain to be checked; the user's real browser sign-in and generation remain a separate acceptance step.
+Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, production build and packaged local startup passed in [CI run 38096085339](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339) for code commit `95bd8acc19520c2e75730cf35c0dfa60a96ba56d`. The [local workspace package](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339/artifacts/11686050219) includes the Mac launcher, built editor, dependency-free Node Agent, source archive and checksum. Real browser sign-in and the first completed response on the user's subscription remain a separate acceptance step; tests used synthetic session data.

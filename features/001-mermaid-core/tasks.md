@@ -84,8 +84,8 @@ Validation: typecheck, lint, all 307 tests and production build passed in [CI ru
 - [x] Serve the local editor and authenticated same-origin API; deny foreign origins and source/credential file access.
 - [x] Add ChatGPT provider controls for login, account choice, cancel, reconnect and local sign-out.
 - [x] Keep discovery, successful generation and exhausted/unavailable subscription statuses distinct.
-- [ ] Run Node security/lifecycle tests and frontend typecheck/lint/tests/build; package a runnable local workspace.
+- [x] Run Node security/lifecycle tests and frontend typecheck/lint/tests/build; package a runnable local workspace.
 - [ ] Complete real sign-in and a diagram generation with the user after local launch.
 
 
-Validation in progress: 102 local Node tests pass with synthetic OAuth/API responses. Full application CI and the runnable package remain to be checked; the user's real browser sign-in and generation remain a separate acceptance step.
+Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, production build and packaged local startup passed in [CI run 38096085339](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339) for code commit `95bd8acc19520c2e75730cf35c0dfa60a96ba56d`. The [local workspace package](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339/artifacts/11686050219) includes the Mac launcher, built editor, dependency-free Node Agent, source archive and checksum. Real browser sign-in and the first completed response on the user's subscription remain a separate acceptance step; tests used synthetic session data.
