@@ -37,7 +37,7 @@ import {
   parseNotebookPlan,
 } from "../../services/notebookPlanService";
 import type { LLMRequestContext } from "../../services/llm/types";
-import { shouldStopOpenCodeGoOperation } from "../../services/llm/openCodeGoClient";
+import { isSubscriptionProvider, shouldStopSubscriptionOperation } from "../../services/subscriptionPolicy";
 import { runLLMRequest } from "../../services/llmRequestRunner";
 import { TimeoutError } from "../../services/llmTimeout";
 import { formatTimeoutRetryMessage } from "./stepMessageUtils";
@@ -411,6 +411,7 @@ type PlannerRunner = (
 
 export const requestNotebookPlan = async (args: {
   sessionId?: string;
+  chatGptAccountId?: string;
   aiConfig: import("../../types").AIConfig;
   modelParams: ModelParams | null;
   prompt: string;
@@ -449,6 +450,7 @@ export const requestNotebookPlan = async (args: {
             })
           : {
               sessionId: args.sessionId,
+              chatGptAccountId: args.chatGptAccountId,
               diagramType: args.forcedDiagramType ?? "auto",
               allowedDiagramTypes: args.allowedDiagramTypes ?? null,
               docsContext: args.docs,
@@ -500,8 +502,8 @@ export const requestNotebookPlan = async (args: {
       : await runLLMRequest({
           task: "planner",
           run: (signal) => runPlanner(plannerMessage, signal),
-          retries: args.aiConfig.provider === "opencode-go" ? 1 : NOTEBOOK_BUILD_RETRY_CONFIG.plannerTimeoutRetries,
-          abortOnTimeout: args.aiConfig.provider === "opencode-go",
+          retries: isSubscriptionProvider(args.aiConfig.provider) ? 1 : NOTEBOOK_BUILD_RETRY_CONFIG.plannerTimeoutRetries,
+          abortOnTimeout: isSubscriptionProvider(args.aiConfig.provider),
           timeoutMs: args.timeoutMs,
           onStart: args.onLLMRequestStart,
           onTimeout: (notice) => {
@@ -855,6 +857,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
         });
         plan = await requestNotebookPlan({
           sessionId: deps.llmSessionId,
+          chatGptAccountId: deps.connectionState.chatGptAccountId,
           aiConfig: deps.aiConfig,
           modelParams: deps.modelParams,
           prompt: prompt.content,
@@ -1067,6 +1070,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
               );
               const buildResult = await runBuildPipeline({
                 sessionId: deps.llmSessionId,
+                chatGptAccountId: deps.connectionState.chatGptAccountId,
                 aiConfig: deps.aiConfig,
                 modelParams: deps.modelParams,
                 diagramType: targetDiagramType,
@@ -1304,7 +1308,7 @@ export const useNotebookBuild = (deps: NotebookBuildDeps) => {
                 });
               }
             } catch (e: unknown) {
-              if (deps.aiConfig.provider === 'opencode-go' && shouldStopOpenCodeGoOperation(e)) throw e;
+              if (shouldStopSubscriptionOperation(deps.aiConfig.provider, e)) throw e;
               lastError = e instanceof Error ? e.message : String(e);
               if (
                 e instanceof TimeoutError &&

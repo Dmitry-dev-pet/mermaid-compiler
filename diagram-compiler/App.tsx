@@ -471,6 +471,7 @@ function App() {
         onConfigChange={setAiConfig}
         onConnect={connectAI}
         onDisconnect={disconnectAI}
+        isProcessing={isProcessing}
         chatColumnWidthPercent={appState.columnWidths[0]}
         theme={appState.theme}
         onThemeChange={setThemePreset}

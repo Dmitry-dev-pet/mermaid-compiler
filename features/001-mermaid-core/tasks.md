@@ -74,5 +74,18 @@ SaaS / Hybrid Storage — reconciliation 2026-09-29:
 - [x] Exclude Go credentials from history, backups and logs; handle auth/quota/cancellation safely.
 - [x] Pass typecheck, lint, tests and build without calling a paid model.
 
-
 Validation: typecheck, lint, all 307 tests and production build passed in [CI run 38090010331](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38090010331) for code commit `0362730f6b5519b35cb46ecab25efc6f8b6e0099`. Real subscription generation still requires a user-supplied key and an explicit prompt in the application.
+
+## Direct ChatGPT subscription — 2026-10-11
+
+- [x] Register and validate SIWC OAuth using loopback PKCE/state/nonce and the issued client ID.
+- [x] Persist protected per-account credentials, rotate refresh tokens and prevent logout/login races.
+- [x] Implement fixed-endpoint model discovery and Responses SSE transport with terminal-event/error/cancellation checks.
+- [x] Serve the local editor and authenticated same-origin API; deny foreign origins and source/credential file access.
+- [x] Add ChatGPT provider controls for login, account choice, cancel, reconnect and local sign-out.
+- [x] Keep discovery, successful generation and exhausted/unavailable subscription statuses distinct.
+- [x] Run Node security/lifecycle tests and frontend typecheck/lint/tests/build; package a runnable local workspace.
+- [ ] Complete real sign-in and a diagram generation with the user after local launch.
+
+
+Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, production build and packaged local startup passed in [CI run 38096085339](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339) for code commit `95bd8acc19520c2e75730cf35c0dfa60a96ba56d`. The [local workspace package](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339/artifacts/11686050219) includes the Mac launcher, built editor, dependency-free Node Agent, source archive and checksum. Real browser sign-in and the first completed response on the user's subscription remain a separate acceptance step; tests used synthetic session data.

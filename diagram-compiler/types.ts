@@ -1,4 +1,4 @@
-export type Provider = 'openrouter' | 'agent' | 'cliproxy' | 'opencode-go';
+export type Provider = 'openrouter' | 'agent' | 'cliproxy' | 'opencode-go' | 'chatgpt';
 
 export type DiagramType =
   'auto'
@@ -53,11 +53,16 @@ export interface OpenCodeGoFilters {
   vendor: string;
 }
 
+export interface ChatGptFilters {
+  vendor: string;
+}
+
 export type ProviderFilters = {
   openrouter: OpenRouterFilters;
   agent: CliproxyFilters;
   cliproxy: CliproxyFilters;
   'opencode-go': OpenCodeGoFilters;
+  chatgpt: ChatGptFilters;
 };
 
 export interface AIConfig {
@@ -80,6 +85,8 @@ export interface ConnectionState {
   status: 'disconnected' | 'connecting' | 'connected' | 'failed';
   error?: string;
   availableModels: Model[];
+  /** Account metadata for the active local connection, never persisted in AIConfig. */
+  chatGptAccountId?: string;
 }
 
 export interface Message {

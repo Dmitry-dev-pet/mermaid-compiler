@@ -18,7 +18,7 @@ import {
 import { augmentMermaidErrorForAutoFix } from "../../utils/mermaidAutoFixHints";
 import type { AIConfig, DiagramType, Message, ModelParams, ThinkingStyle } from "../../types";
 import type { LLMRequestContext } from "../../services/llm/types";
-import { shouldStopOpenCodeGoOperation } from "../../services/llm/openCodeGoClient";
+import { isSubscriptionProvider, shouldStopSubscriptionOperation } from "../../services/subscriptionPolicy";
 import type { StudioOperationRunner } from "./operationRunner";
 
 const parseHttpStatusFromErrorMessage = (message: string): number | null => {
@@ -71,6 +71,7 @@ type BuildValidationCallbacks = {
 
 type BuildPipelineOptions = {
   sessionId?: string;
+  chatGptAccountId?: string;
   aiConfig: AIConfig;
   modelParams?: ModelParams | null;
   diagramType: DiagramType;
@@ -156,6 +157,7 @@ export const runBuildPipeline = async (
 ): Promise<BuildPipelineResult> => {
   const {
     sessionId,
+    chatGptAccountId,
     aiConfig,
     modelParams,
     diagramType,
@@ -179,7 +181,7 @@ export const runBuildPipeline = async (
   let currentAttempt = 0;
   let suppressEmpty = false;
   let contextSent = false;
-  let goStopError: Error | null = null;
+  let subscriptionStopError: Error | null = null;
   const attemptResult = await runAttemptLoop({
     maxAttempts,
     onAttempt: (attempt) => {
@@ -194,15 +196,16 @@ export const runBuildPipeline = async (
       callbacks?.onEmpty?.(attempt, maxAttempts);
     },
     onError: (attempt, error) => {
-      if (aiConfig.provider === 'opencode-go' && shouldStopOpenCodeGoOperation(error)) goStopError = error;
+      if (shouldStopSubscriptionOperation(aiConfig.provider, error)) subscriptionStopError = error;
       const message = error instanceof Error ? error.message : String(error);
       callbacks?.onError?.(attempt, maxAttempts, message);
     },
     shouldRetryOnError: (_attempt, error) =>
-      !(aiConfig.provider === 'opencode-go' && shouldStopOpenCodeGoOperation(error)) && shouldRetryBuildAttemptOnError(error),
+      !shouldStopSubscriptionOperation(aiConfig.provider, error) && shouldRetryBuildAttemptOnError(error),
     execute: async () => {
       const requestContext: LLMRequestContext = {
         sessionId,
+        chatGptAccountId,
         diagramType,
         docsContext: docs,
         language,
@@ -236,8 +239,8 @@ export const runBuildPipeline = async (
                 modelParams,
                 signal,
               ),
-            retries: aiConfig.provider === "opencode-go" ? 1 : buildRequestRetries,
-            abortOnTimeout: aiConfig.provider === "opencode-go",
+            retries: isSubscriptionProvider(aiConfig.provider) ? 1 : buildRequestRetries,
+            abortOnTimeout: isSubscriptionProvider(aiConfig.provider),
             timeoutMs,
             onStart: onLLMRequestStart,
           });
@@ -289,7 +292,7 @@ export const runBuildPipeline = async (
     },
   });
 
-  if (goStopError) throw goStopError;
+  if (subscriptionStopError) throw subscriptionStopError;
 
   const resolvedFallback = allowFallback
     ? (fallbackCode ?? getFallbackMermaid(diagramType))
@@ -344,6 +347,7 @@ export const runBuildPipeline = async (
       const fixInput = prepareMermaid(code, diagramType).sanitizedCode;
       const fixContext: LLMRequestContext = {
         sessionId,
+        chatGptAccountId,
         diagramType,
         docsContext: docs,
         language,
@@ -377,8 +381,8 @@ export const runBuildPipeline = async (
                 modelParams,
                 signal,
               ),
-            retries: aiConfig.provider === "opencode-go" ? 1 : autoFixRequestRetries,
-            abortOnTimeout: aiConfig.provider === "opencode-go",
+            retries: isSubscriptionProvider(aiConfig.provider) ? 1 : autoFixRequestRetries,
+            abortOnTimeout: isSubscriptionProvider(aiConfig.provider),
             timeoutMs,
             onStart: onLLMRequestStart,
           });

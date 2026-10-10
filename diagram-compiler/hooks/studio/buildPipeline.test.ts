@@ -13,6 +13,7 @@ import { runLLMRequest } from "../../services/llmRequestRunner";
 import type { AIConfig } from "../../types";
 import { OpenCodeGoError } from "../../services/llm/openCodeGoClient";
 import { TimeoutError } from "../../services/llmTimeout";
+import { ChatGptAgentError } from "../../services/chatGptClient";
 
 vi.mock("../../services/llmService", () => ({
   generateDiagram: vi.fn(),
@@ -58,7 +59,7 @@ const testAiConfig: AIConfig = {
   proxyManagementKey: "",
   proxyEndpoint: "",
   selectedModelId: "test",
-  selectedModelIdByProvider: { openrouter: "test", agent: "", cliproxy: "test", 'opencode-go': '' },
+  selectedModelIdByProvider: { openrouter: "test", agent: "", cliproxy: "test", 'opencode-go': '', chatgpt: '' },
   filtersByProvider: {
     openrouter: {
       vendor: "",
@@ -70,6 +71,7 @@ const testAiConfig: AIConfig = {
     agent: { family: "" },
     cliproxy: { family: "" },
     'opencode-go': { vendor: '' },
+    chatgpt: { vendor: '' },
   },
 };
 
@@ -199,12 +201,12 @@ describe("runBuildPipeline", () => {
     expect(prepareMermaid).not.toHaveBeenCalled();
   });
 
-  it('stops an ambiguous Go timeout before another build attempt or fallback', async () => {
+  it.each(['opencode-go', 'chatgpt'] as const)('stops an ambiguous %s timeout before another build attempt or fallback', async (provider) => {
     const error = new TimeoutError('LLM request timed out');
     vi.mocked(generateDiagram).mockRejectedValue(error);
     await expect(runBuildPipeline({
       ...baseOptions,
-      aiConfig: { ...testAiConfig, provider: 'opencode-go' },
+      aiConfig: { ...testAiConfig, provider },
       sessionId: 'mermaid:project-123:main',
       maxAttempts: 3,
       buildRequestRetries: 3,
@@ -212,6 +214,22 @@ describe("runBuildPipeline", () => {
     })).rejects.toBe(error);
     expect(generateDiagram).toHaveBeenCalledTimes(1);
     expect(runLLMRequest).toHaveBeenCalledWith(expect.objectContaining({ retries: 1, abortOnTimeout: true }));
+    expect(fixDiagram).not.toHaveBeenCalled();
+    expect(prepareMermaid).not.toHaveBeenCalled();
+  });
+  it.each([401, 403, 409, 429, 502, 504])('stops ChatGPT HTTP %i before retry, fallback, auto-fix or changing accounts', async (status) => {
+    const error = new ChatGptAgentError('synthetic_error', 'Subscription request stopped', status);
+    vi.mocked(generateDiagram).mockRejectedValue(error);
+    await expect(runBuildPipeline({
+      ...baseOptions,
+      aiConfig: { ...testAiConfig, provider: 'chatgpt' },
+      sessionId: 'mermaid:project-123:main',
+      chatGptAccountId: 'account-a',
+      maxAttempts: 3,
+      allowFallback: true,
+    })).rejects.toBe(error);
+    expect(generateDiagram).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(generateDiagram).mock.calls[0][2].chatGptAccountId).toBe('account-a');
     expect(fixDiagram).not.toHaveBeenCalled();
     expect(prepareMermaid).not.toHaveBeenCalled();
   });

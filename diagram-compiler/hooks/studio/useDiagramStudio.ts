@@ -843,6 +843,7 @@ export const useDiagramStudio = () => {
         (resolvedDiagramType === "auto" ? appState.mainDiagramTypes : null);
       return {
         sessionId: llmSessionId,
+        chatGptAccountId: connectionState.chatGptAccountId,
         diagramType: resolvedDiagramType,
         allowedDiagramTypes: resolvedAllowedDiagramTypes,
         docsContext: args.docsContext,
@@ -850,7 +851,7 @@ export const useDiagramStudio = () => {
         thinkingStyle: appState.thinkingStyle,
       };
     },
-    [appState.diagramType, appState.mainDiagramTypes, appState.thinkingStyle, llmSessionId],
+    [appState.diagramType, appState.mainDiagramTypes, appState.thinkingStyle, llmSessionId, connectionState.chatGptAccountId],
   );
 
   const { handleNotebookBuild } = useNotebookBuild({

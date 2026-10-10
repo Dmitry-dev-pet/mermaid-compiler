@@ -305,3 +305,21 @@ User goal: use a personal OpenCode Go subscription for Mermaid code generation, 
 - Do not consume or move credentials owned by other applications. An actual paid-model verification remains a separate, explicit user action in Mermaid.
 - Provide the same handler for the Vercel production root and local Vite development so the configured route is real in both environments.
 - Acceptance: provider selection, key exclusion from project exports, model discovery, stable session forwarding, cancellation/error handling and regression tests for existing flows; typecheck, lint, tests and build.
+
+## Direct ChatGPT subscription — 2026-10-11
+
+Approved user goal: browser sign-in with the user's ChatGPT subscription for the personal local Mermaid workspace, using the official Sign in with ChatGPT (SIWC) and Responses API flow without requiring Codex or an API key.
+
+- Add a distinct `chatgpt` provider and a lightweight local Mermaid Agent mode under `agent/chatgpt/`, using Node 22 or later. It serves the built editor and its own same-origin API on HTTP `127.0.0.1`; it does not replace the existing optional Tauri/Codex agent.
+- Use only the official OAuth and Responses endpoints. Dynamically register the client with a persistent opaque host ID, fresh PKCE/state/nonce, and a loopback `/auth/callback`. Reauthorization reuses the issued client ID for the selected verified account and workspace.
+- Verify ID-token signatures, issuer, audience, expiration and nonce before activating an account. Require the granted plan-usage scope. A denied or failed login must not replace an existing valid account.
+- Store account registrations and rotating OAuth credentials atomically in an app-owned, owner-only local directory. Never expose OAuth credentials to browser JavaScript, AIConfig, project/session storage, exports, history, logs or the hosted website. Serialize refreshes and prevent a late refresh/callback from restoring a signed-out session.
+- Provide Continue with ChatGPT, saved-account selection, explicit add-account, cancel, reconnect and local sign-out. Local sign-out removes that account's session; explain that account-wide app access is managed in ChatGPT settings.
+- Bind the server only to loopback, validate the Host and Origin for control/inference requests, and require an app-issued HTTP-only same-site browser session. Serve only the built frontend, never source/config/credential files. Public Vercel clients link to the local workspace and do not proxy OAuth or receive ChatGPT credentials.
+- Discover account-specific models with the authorized access token; expose only catalogue entries intended for display. Model loading proves discovery only. Mark generation verified only after an explicit request receives `response.completed`.
+- Translate existing text prompts/history to Responses input, with developer instructions instead of explicit system message items, `store: false` and `stream: true`. Omit unsupported sampling/output parameters. No arbitrary URLs, caller-defined headers or tool execution.
+- Support Chat/Build/Analyze/Fix through the existing strategy interface. Handle SSE framing, completed/failed/incomplete and interrupted streams, quota/auth errors and cancellation. Timeout, cancellation and limits abort the active request and stop automatic retries/fallback; bounded syntax repairs remain separate explicit pipeline requests.
+- Browser login and live inference consume the user's own authorization/plan and are verified only when the user completes the real login and requests generation. Automated tests use synthetic credentials and mocked upstream endpoints.
+- Acceptance: OAuth security and refresh races, protected persistence, same-origin server boundary, account/model lifecycle, completed-only inference, cancellation, credential-free exports and existing frontend regressions; typecheck, lint, tests and production build; a runnable local package for Mac.
+
+Protocol reference: https://developers.openai.com/siwc/token-sharing-open-source

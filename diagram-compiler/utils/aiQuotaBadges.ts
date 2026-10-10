@@ -38,7 +38,7 @@ export const buildQuotaBadges = (args: {
   } = args;
 
   if (!selectedModelId) return [];
-  if (provider === 'openrouter' || provider === 'opencode-go') return [];
+  if (provider === 'openrouter' || provider === 'opencode-go' || provider === 'chatgpt') return [];
   if (family === 'other') return [];
 
   const selectedId = selectedModelId.trim().toLowerCase();

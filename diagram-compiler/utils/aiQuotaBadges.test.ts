@@ -6,9 +6,9 @@ import type { AgentGeminiQuotaState } from '../hooks/core/useAgentGeminiQuota';
 import { buildQuotaBadges } from './aiQuotaBadges';
 
 describe('buildQuotaBadges', () => {
-  it('never shows unrelated CLI quotas for Go', () => {
+  it.each(['opencode-go', 'chatgpt'] as const)('never shows unrelated CLI quotas for %s', (provider) => {
     expect(buildQuotaBadges({
-      provider: 'opencode-go',
+      provider,
       selectedModelId: 'go-model',
       modelName: 'Go model',
       family: 'gpt',

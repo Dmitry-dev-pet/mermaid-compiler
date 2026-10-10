@@ -16,6 +16,7 @@ import { useCliproxyQuotas } from '../../hooks/core/useCliproxyQuotas';
 import { useCliproxyManagementInfo } from '../../hooks/core/useCliproxyManagementInfo';
 import { useAgentCodexQuota } from '../../hooks/core/useAgentCodexQuota';
 import { useAgentGeminiQuota } from '../../hooks/core/useAgentGeminiQuota';
+import { useChatGptAccount } from '../../hooks/core/useChatGptAccount';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { RadioGroup, RadioOption } from '../ui/Radio';
@@ -27,6 +28,7 @@ import { buildCliproxySubscriptionsViewModel, CliproxySubscriptionsGroupBy } fro
 import { CliproxyQuotasPanel } from './CliproxyQuotasPanel';
 import { getAntigravityBucketLabel } from '../../services/cliproxy/quotas/parsers';
 import { AiStatusLine } from './AiStatusLine';
+import { ChatGptAccountPanel } from './ChatGptAccountPanel';
 import { getModelFamilyKey, getModelFamilyLabel } from '../../utils/aiModelUtils';
 import { getModelDisplayName } from '../../utils/aiModelDisplayName';
 import { getConnectionStatusLabel } from '../../utils/aiStatusPresentation';
@@ -42,6 +44,7 @@ type AiControlPlaneMenuProps = {
   onDisconnect: () => void;
   llmTimeoutMs: number;
   onLLMTimeoutMsChange: (timeoutMs: number) => void;
+  isProcessing?: boolean;
 };
 
 const normalizeCliproxyBase = (endpoint: string) => endpoint.trim().replace(/\/v1\/?$/, '').replace(/\/$/, '');
@@ -65,6 +68,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   onDisconnect,
   llmTimeoutMs,
   onLLMTimeoutMsChange,
+  isProcessing = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -115,6 +119,12 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
     endpoint: aiConfig.agentEndpoint || '',
     token: aiConfig.agentToken || '',
   });
+  const chatGptAccount = useChatGptAccount({
+    enabled: aiConfig.provider === 'chatgpt',
+    isProcessing,
+    onConnect,
+    onDisconnect,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -128,6 +138,13 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   }, []);
 
   const getStatusTone = () => {
+    if (aiConfig.provider === 'chatgpt') {
+      const usage = chatGptAccount.status?.usage;
+      if (chatGptAccount.error || usage?.state === 'limit_reached' || usage?.state === 'unavailable') return 'text-rose-500';
+      if (chatGptAccount.status?.connected && usage?.state === 'available' && usage.model === aiConfig.selectedModelId) return 'text-emerald-500';
+      if (chatGptAccount.loading || chatGptAccount.status?.connected || chatGptAccount.status?.login?.state === 'pending') return 'text-amber-500';
+      return 'text-slate-400 dark:text-slate-500';
+    }
     if (aiConfig.provider === 'opencode-go' && connectionState.status === 'connected') return 'text-amber-500';
     if (connectionState.status === 'connected') return 'text-emerald-500';
     if (connectionState.status === 'failed') return 'text-rose-500';
@@ -202,6 +219,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   const isAgent = aiConfig.provider === 'agent';
   const isCliproxy = aiConfig.provider === 'cliproxy';
   const isOpenCodeGo = aiConfig.provider === 'opencode-go';
+  const isChatGpt = aiConfig.provider === 'chatgpt';
   const cliproxyAuthFiles = useMemo(
     () => (cliproxyInfo.cliproxyAuthFiles ?? []) as CliproxyAuthFile[],
     [cliproxyInfo.cliproxyAuthFiles],
@@ -218,8 +236,9 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   const filtersByProvider = aiConfig.filtersByProvider ?? DEFAULT_AI_CONFIG.filtersByProvider;
   const openRouterFilters = filtersByProvider.openrouter;
   const openCodeGoFilters = filtersByProvider['opencode-go'] ?? DEFAULT_AI_CONFIG.filtersByProvider['opencode-go'];
+  const chatGptFilters = filtersByProvider.chatgpt ?? DEFAULT_AI_CONFIG.filtersByProvider.chatgpt;
   const proxyFilters = isAgent ? filtersByProvider.agent : isCliproxy ? filtersByProvider.cliproxy : null;
-  const activeVendor = isOpenCodeGo ? openCodeGoFilters.vendor : openRouterFilters.vendor;
+  const activeVendor = isChatGpt ? chatGptFilters.vendor : isOpenCodeGo ? openCodeGoFilters.vendor : openRouterFilters.vendor;
   const timeoutSeconds = Math.max(5, Math.min(300, Math.round(llmTimeoutMs / 1000)));
   const statusToneClass = getStatusTone();
   const reasoningEffort =
@@ -282,6 +301,16 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
     }));
   };
 
+  const updateChatGptVendor = (vendor: string) => {
+    onConfigChange((prev) => ({
+      ...prev,
+      filtersByProvider: {
+        ...prev.filtersByProvider,
+        chatgpt: { vendor },
+      },
+    }));
+  };
+
   const switchProvider = (provider: AIConfig['provider']) => {
     if (aiConfig.provider === provider) return;
     onDisconnect();
@@ -324,7 +353,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
   });
 
   const vendorCounts = new Map<string, number>();
-  if (isOpenRouter || isOpenCodeGo) {
+  if (isOpenRouter || isOpenCodeGo || isChatGpt) {
     baseFilteredModels.forEach((model) => {
       if (!model || !model.vendor) return;
       vendorCounts.set(model.vendor, (vendorCounts.get(model.vendor) ?? 0) + 1);
@@ -343,7 +372,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([vendor, count]) => ({ vendor, count }));
 
-  if ((isOpenRouter || isOpenCodeGo) && activeVendor && !vendorCounts.has(activeVendor)) {
+  if ((isOpenRouter || isOpenCodeGo || isChatGpt) && activeVendor && !vendorCounts.has(activeVendor)) {
     vendorOptions.unshift({ vendor: activeVendor, count: 0 });
   }
 
@@ -365,7 +394,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
 
   const filteredModels = baseFilteredModels.filter((m) => {
     if (!m) return false;
-    if (isOpenRouter || isOpenCodeGo) {
+    if (isOpenRouter || isOpenCodeGo || isChatGpt) {
       if (activeVendor && m.vendor !== activeVendor) return false;
       return true;
     }
@@ -456,6 +485,9 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
             cliproxyQuotas={cliproxyQuotas}
             agentCodexQuota={agentCodexQuota}
             agentGeminiQuota={agentGeminiQuota}
+            chatGptStatus={chatGptAccount.status}
+            chatGptIsLocal={chatGptAccount.isLocal}
+            chatGptLoading={chatGptAccount.loading}
           />
         </span>
         <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-mono tabular-nums text-slate-400 dark:text-slate-400">
@@ -481,6 +513,12 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
                 checked={isOpenCodeGo}
                 onChange={() => switchProvider('opencode-go')}
                 label="OpenCode Go"
+              />
+              <RadioOption
+                name="provider"
+                checked={isChatGpt}
+                onChange={() => switchProvider('chatgpt')}
+                label="ChatGPT"
               />
               <RadioOption
                 name="provider"
@@ -551,6 +589,13 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
                   Clear Go key
                 </Button>
               </div>
+            ) : isChatGpt ? (
+              <ChatGptAccountPanel
+                account={chatGptAccount}
+                connectionState={connectionState}
+                selectedModelId={aiConfig.selectedModelId}
+                isProcessing={isProcessing}
+              />
             ) : isAgent ? (
               <div className="space-y-3">
                 <CollapsibleSection
@@ -795,40 +840,42 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
               </CollapsibleSection>
             )}
 
-            <div className={`mt-3 flex gap-2 ${isOpenCodeGo ? 'flex-col items-start' : 'items-center justify-between'}`}>
-              <span
-                className={`text-xs font-medium flex items-center gap-1 ${
-                  connectionState.status === 'connected'
-                    ? isOpenCodeGo ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'
-                    : connectionState.status === 'failed'
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                {connectionState.status === 'connected' && <Check size={12} />}
-                {connectionState.status === 'failed' && <X size={12} />}
-                Status: {getConnectionStatusLabel(aiConfig.provider, connectionState.status)}
-                {connectionState.error && <span className="ml-1 text-red-500">({connectionState.error})</span>}
-              </span>
+            {!isChatGpt && (
+              <div className={`mt-3 flex gap-2 ${isOpenCodeGo ? 'flex-col items-start' : 'items-center justify-between'}`}>
+                <span
+                  className={`text-xs font-medium flex items-center gap-1 ${
+                    connectionState.status === 'connected'
+                      ? isOpenCodeGo ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'
+                      : connectionState.status === 'failed'
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {connectionState.status === 'connected' && <Check size={12} />}
+                  {connectionState.status === 'failed' && <X size={12} />}
+                  Status: {getConnectionStatusLabel(aiConfig.provider, connectionState.status)}
+                  {connectionState.error && <span className="ml-1 text-red-500">({connectionState.error})</span>}
+                </span>
 
-              {connectionState.status !== 'connected' ? (
-                <Button
-                  onClick={onConnect}
-                  disabled={connectionState.status === 'connecting' || (isOpenCodeGo && (!openCodeGoKey.trim() || Boolean(openCodeGoKeyError)))}
-                  className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
-                >
-                  {connectionState.status === 'connecting' && <Loader2 size={12} className="animate-spin" />}
-                  {isOpenCodeGo ? 'Load models' : 'Test connection'}
-                </Button>
-              ) : (
-                <Button
-                  onClick={onDisconnect}
-                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <LogOut size={12} /> Disconnect
-                </Button>
-              )}
-            </div>
+                {connectionState.status !== 'connected' ? (
+                  <Button
+                    onClick={onConnect}
+                    disabled={connectionState.status === 'connecting' || (isOpenCodeGo && (!openCodeGoKey.trim() || Boolean(openCodeGoKeyError)))}
+                    className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
+                  >
+                    {connectionState.status === 'connecting' && <Loader2 size={12} className="animate-spin" />}
+                    {isOpenCodeGo ? 'Load models' : 'Test connection'}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={onDisconnect}
+                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <LogOut size={12} /> Disconnect
+                  </Button>
+                )}
+              </div>
+            )}
 
             {(isAgent || isCliproxy) && connectionState.status === 'connected' && (
               <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
@@ -970,7 +1017,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
             )}
           </form>
 
-          {connectionState.status === 'connected' && (
+          {connectionState.status === 'connected' && (!isChatGpt || (chatGptAccount.status?.connected && chatGptAccount.status.login?.state !== 'pending')) && (
             <div className="mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Model</label>
@@ -1020,12 +1067,16 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
                         </div>
                       </div>
                     )}
-                    {(isOpenRouter || isOpenCodeGo) && (
+                    {(isOpenRouter || isOpenCodeGo || isChatGpt) && (
                       <div className="col-span-2">
                         <label className="block text-[10px] uppercase text-slate-400 mb-1">Vendor</label>
                       <Select
                         value={activeVendor}
-                        onChange={(e) => isOpenCodeGo ? updateOpenCodeGoVendor(e.target.value) : updateOpenRouterFilters({ vendor: e.target.value })}
+                        onChange={(e) => {
+                          if (isChatGpt) updateChatGptVendor(e.target.value);
+                          else if (isOpenCodeGo) updateOpenCodeGoVendor(e.target.value);
+                          else updateOpenRouterFilters({ vendor: e.target.value });
+                        }}
                         size="sm"
                       >
                         <option value="">
@@ -1153,7 +1204,9 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-[10px] text-slate-400 text-center">
-            {isOpenCodeGo
+            {isChatGpt
+              ? 'ChatGPT sign-in is managed by the local Agent. Account credentials stay on this device, outside browser settings and project backups.'
+              : isOpenCodeGo
               ? 'Your Go key is stored in this browser, outside project backups. Requests go through this app to OpenCode Go.'
               : 'Your API key is stored locally in your browser. Requests go directly to your provider.'}
           </div>

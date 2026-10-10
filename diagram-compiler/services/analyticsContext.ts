@@ -9,7 +9,7 @@ export const buildAnalyticsContext = (args: {
   docsUsage?: DocsUsageSummary;
   modelParams?: AnalyticsContext['modelParams'] | null;
 }): AnalyticsContext => {
-  const modelParams = resolveModelParams(args.modelParams);
+  const modelParams = args.aiConfig.provider === 'chatgpt' ? {} : resolveModelParams(args.modelParams);
 
   return {
     provider: args.aiConfig.provider,

@@ -4,11 +4,13 @@ import { LLMProviderStrategy } from "./llm/LLMProviderStrategy";
 import { OpenRouterStrategy } from "./llm/OpenRouterStrategy";
 import { CliproxyStrategy } from "./llm/CliproxyStrategy";
 import { OpenCodeGoStrategy } from "./llm/OpenCodeGoStrategy";
+import { ChatGptStrategy } from "./llm/ChatGptStrategy";
 
 // Instantiate strategies
 const openRouterStrategy = new OpenRouterStrategy();
 const cliproxyStrategy = new CliproxyStrategy();
 const openCodeGoStrategy = new OpenCodeGoStrategy();
+const chatGptStrategy = new ChatGptStrategy();
 
 /**
  * Selects the appropriate LLM strategy based on the AIConfig provider.
@@ -25,6 +27,8 @@ const getStrategy = (config: AIConfig): LLMProviderStrategy => {
       return cliproxyStrategy;
     case "opencode-go":
       return openCodeGoStrategy;
+    case "chatgpt":
+      return chatGptStrategy;
     default:
       throw new Error(`Unsupported LLM provider: ${config.provider}`);
   }

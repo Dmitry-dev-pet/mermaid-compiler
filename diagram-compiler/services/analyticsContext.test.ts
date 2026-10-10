@@ -14,7 +14,7 @@ const baseAIConfig: AIConfig = {
   proxyManagementKey: '',
   proxyEndpoint: '',
   selectedModelId: 'test-model',
-  selectedModelIdByProvider: { openrouter: 'test-model', agent: '', cliproxy: 'proxy-model', 'opencode-go': '' },
+  selectedModelIdByProvider: { openrouter: 'test-model', agent: '', cliproxy: 'proxy-model', 'opencode-go': '', chatgpt: '' },
   filtersByProvider: {
     openrouter: {
       vendor: 'any',
@@ -26,6 +26,7 @@ const baseAIConfig: AIConfig = {
     agent: { family: '' },
     cliproxy: { family: '' },
     'opencode-go': { vendor: '' },
+    chatgpt: { vendor: '' },
   },
 };
 
@@ -45,6 +46,15 @@ const baseAppState: AppState = {
 };
 
 describe('buildAnalyticsContext', () => {
+  it('does not report unsupported parameters as sent to ChatGPT', () => {
+    const ctx = buildAnalyticsContext({
+      aiConfig: { ...baseAIConfig, provider: 'chatgpt' },
+      appState: baseAppState,
+      diagramType: 'flowchart',
+      modelParams: { temperature: 0.7, max_tokens: 2048 },
+    });
+    expect(ctx.modelParams).toEqual({});
+  });
   it('uses DEFAULT_MODEL_PARAMS when modelParams absent', () => {
     const ctx = buildAnalyticsContext({
       aiConfig: baseAIConfig,

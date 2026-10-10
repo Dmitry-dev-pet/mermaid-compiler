@@ -16,6 +16,7 @@ interface HeaderProps {
   onConfigChange: React.Dispatch<React.SetStateAction<AIConfig>>;
   onConnect: () => Promise<void>;
   onDisconnect: () => void;
+  isProcessing?: boolean;
   chatColumnWidthPercent: number;
   theme: ThemePresetId;
   onThemeChange: (theme: ThemePresetId) => void;
@@ -42,6 +43,7 @@ const Header: React.FC<HeaderProps> = ({
   onConfigChange, 
   onConnect, 
   onDisconnect,
+  isProcessing = false,
   chatColumnWidthPercent,
   theme,
   onThemeChange,
@@ -176,6 +178,7 @@ const Header: React.FC<HeaderProps> = ({
           onConfigChange={onConfigChange}
           onConnect={onConnect}
           onDisconnect={onDisconnect}
+          isProcessing={isProcessing}
           llmTimeoutMs={llmTimeoutMs}
           onLLMTimeoutMsChange={onLLMTimeoutMsChange}
         />

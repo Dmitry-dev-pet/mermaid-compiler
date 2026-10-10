@@ -5,10 +5,13 @@
   "scripts": {
     "dev": "npm --prefix diagram-compiler run dev",
     "build": "npm --prefix diagram-compiler run build",
+    "build:chatgpt": "npm run build && node agent/chatgpt/package.mjs",
+    "agent:chatgpt": "node agent/chatgpt/cli.mjs",
     "preview": "npm --prefix diagram-compiler run preview",
     "start": "node server.js",
     "lint": "npm --prefix diagram-compiler run lint",
     "test": "npm --prefix diagram-compiler test",
+    "test:chatgpt": "node --test agent/chatgpt/*.test.mjs",
     "typecheck": "npm --prefix diagram-compiler run typecheck",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
