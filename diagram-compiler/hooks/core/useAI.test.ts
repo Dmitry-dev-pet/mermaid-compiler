@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, createElement } from 'react';
+import { act, createElement, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAI } from './useAI';
@@ -26,7 +26,11 @@ describe('useAI ChatGPT connection lifecycle', () => {
     if (!api) throw new Error('Hook has not rendered');
     return api;
   };
-  const Probe = () => { api = useAI(); return null; };
+  const Probe = () => {
+    const result = useAI();
+    useEffect(() => { api = result; }, [result]);
+    return null;
+  };
   const render = async () => { await act(async () => { root.render(createElement(Probe)); }); };
 
   beforeEach(() => {

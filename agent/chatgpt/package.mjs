@@ -17,13 +17,18 @@ const execFileAsync = promisify(execFile);
 
 async function verifyPackage() {
   const { startChatGPTAgent } = await import(pathToFileURL(join(OUTPUT, 'agent/chatgpt/server.mjs')).href);
-  const { handleOpenCodeGo } = await import(pathToFileURL(join(OUTPUT, 'agent/chatgpt/generated/openCodeGoHandler.mjs')).href);
+  const { handleOpenCodeGo, createOpenCodeGoHandler } = await import(pathToFileURL(join(OUTPUT, 'agent/chatgpt/generated/openCodeGoHandler.mjs')).href);
+  const { OpenAIProtocol } = await import(pathToFileURL(join(OUTPUT, 'agent/chatgpt/protocol.mjs')).href);
+  assert.equal(typeof handleOpenCodeGo, 'function');
+  const forbidUpstream = async () => { throw new Error('Package verification must not call an upstream service.'); };
   const temporary = await mkdtemp(join(tmpdir(), 'mermaid-package-check-'));
   let agent;
   try {
     agent = await startChatGPTAgent({
       port: 0, distDir: join(OUTPUT, 'diagram-compiler/dist'),
-      storageDir: join(temporary, 'session'), goHandler: handleOpenCodeGo,
+      storageDir: join(temporary, 'session'),
+      goHandler: createOpenCodeGoHandler({ fetcher: forbidUpstream }),
+      protocol: new OpenAIProtocol({ fetchImpl: forbidUpstream }),
     });
     const page = await fetch(agent.origin);
     assert.equal(page.status, 200);
@@ -36,7 +41,7 @@ async function verifyPackage() {
     assert.deepEqual(status.accounts, []);
     const go = await fetch(agent.origin + '/api/opencode-go', {
       method: 'POST', headers: { cookie, origin: agent.origin, 'content-type': 'application/json' },
-      body: JSON.stringify({ operation: 'models' }),
+      body: JSON.stringify({ operation: 'chat' }),
     });
     // No key is supplied, so the packaged Go adapter must reject locally.
     assert.equal(go.status, 401);

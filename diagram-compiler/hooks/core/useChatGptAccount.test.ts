@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import React, { act } from 'react';
+import React, { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { ChatGptStatus } from '../../services/chatGptClient';
 import { useChatGptAccount, type ChatGptAccountControls } from './useChatGptAccount';
 
@@ -51,11 +51,12 @@ describe('useChatGptAccount', () => {
   let root: Root;
   let container: HTMLDivElement;
   let controls: ChatGptAccountControls;
-  let onConnect: ReturnType<typeof vi.fn>;
-  let onDisconnect: ReturnType<typeof vi.fn>;
+  let onConnect: Mock<() => Promise<void>>;
+  let onDisconnect: Mock<() => void>;
 
   const Harness = ({ enabled = true, isProcessing = false }: { enabled?: boolean; isProcessing?: boolean }) => {
-    controls = useChatGptAccount({ enabled, isProcessing, onConnect, onDisconnect });
+    const current = useChatGptAccount({ enabled, isProcessing, onConnect, onDisconnect });
+    useEffect(() => { controls = current; }, [current]);
     return null;
   };
 
@@ -73,8 +74,8 @@ describe('useChatGptAccount', () => {
     client.cancel.mockResolvedValue({ ok: true });
     client.logout.mockResolvedValue({ ok: true });
     client.account.mockResolvedValue({ ok: true });
-    onConnect = vi.fn().mockResolvedValue(undefined);
-    onDisconnect = vi.fn();
+    onConnect = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    onDisconnect = vi.fn<() => void>();
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
