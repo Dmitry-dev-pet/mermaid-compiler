@@ -308,7 +308,7 @@ const ChatProjects: React.FC<ChatProjectsProps> = ({
             <Button
               onClick={() => activeProject && handleDelete(activeProject)}
               disabled={!activeProjectId}
-              className="text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className="text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 max-md:hidden"
               type="button"
               title="Delete current project"
             >
