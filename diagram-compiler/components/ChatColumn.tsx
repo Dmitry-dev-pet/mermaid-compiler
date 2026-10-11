@@ -37,6 +37,8 @@ interface ChatColumnProps {
   onClear: () => void;
   onNewProject: () => void;
   isProcessing: boolean;
+  simpleMode?: boolean;
+  isAIReady?: boolean;
   onStop?: () => void;
   hasIntent: boolean;
   onSetPromptPreview: (
@@ -102,6 +104,8 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
   onClear,
   onNewProject,
   isProcessing,
+  simpleMode = false,
+  isAIReady = true,
   onStop,
   hasIntent,
   onSetPromptPreview,
@@ -260,7 +264,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
 
   const handleSubmit = (mode: "chat" | "build", e?: React.FormEvent) => {
     e?.preventDefault();
-    if (isProcessing) return;
+    if (isProcessing || !isAIReady) return;
 
     onClearProjectPreview();
 
@@ -401,6 +405,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
     >
       <ChatProjects
         mode="panel"
+        simpleMode={simpleMode}
         chatStatus={isProcessing ? "running" : "idle"}
         projects={projects}
         activeProjectId={activeProjectId}
@@ -428,6 +433,11 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
         onThinkingStyleChange={onThinkingStyleChange}
       />
       {headerAddon}
+      {simpleMode && !isAIReady && (
+        <div role="status" className="mx-3 mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+          AI is not connected. Choose a provider in the AI menu above for Chat and Build. Manual code editing and export remain available in Studio.
+        </div>
+      )}
 
       {isNotebookChatMode && onBackToNotebookMainChat && (
         <div
@@ -448,7 +458,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
       )}
 
       <div className="flex-1 min-h-0 px-3 pt-3 pb-0 flex flex-col gap-2">
-        <ChatSummaryCard summaryText={summaryText} />
+        {(!simpleMode || Boolean(summaryText?.trim())) && <ChatSummaryCard summaryText={summaryText} />}
 
         <section className="rounded-md border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 flex flex-col min-h-0 flex-1">
           <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500 border-b border-slate-200/60 dark:border-slate-800/60">
@@ -465,8 +475,10 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
             onZeroStatePrompt={(prompt) => {
               if (isProcessing) return;
               setInput(prompt);
-              onBuild(prompt);
-              setInput("");
+              if (isAIReady) {
+                onBuild(prompt);
+                setInput("");
+              }
             }}
             onOpenNotebookBlock={onOpenNotebookBlock}
             onOpenBuildDocsFile={onOpenBuildDocsFile}
@@ -483,8 +495,8 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
       </div>
 
       <div
-        className="group relative h-4 cursor-row-resize flex items-center justify-center bg-transparent"
-        onMouseDown={onResizeStart}
+        className={`group relative h-4 cursor-row-resize items-center justify-center bg-transparent ${simpleMode ? "hidden" : "flex"}`}
+        onMouseDown={simpleMode ? undefined : onResizeStart}
         title="Resize input"
       >
         <div className="h-px w-full bg-slate-200 dark:bg-slate-800" />
@@ -494,14 +506,14 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
       {/* Composer */}
       <div
         className="flex flex-col p-3 bg-transparent"
-        style={{ height: composerHeight }}
+        style={{ height: simpleMode ? Math.min(composerHeight, 160) : composerHeight }}
       >
         <div className="relative flex-1 min-h-0">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type specification..."
+            placeholder={simpleMode ? "Describe what your diagram should show…" : "Type specification…"}
             className="w-full h-full resize-none rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
@@ -509,15 +521,15 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
         <div className="mt-2 flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              <Button
+              {!simpleMode && <Button
                 onClick={onNewProject}
                 variant="ghost"
                 className="h-auto px-1 py-0 text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors"
-                title="Новый проект (сброс чата, диаграммы и истории)"
+                title="Create a fresh local project"
                 type="button"
               >
-                <Plus size={12} /> Новый проект
-              </Button>
+                <Plus size={12} /> New project
+              </Button>}
               <Button
                 onClick={onClear}
                 variant="ghost"
@@ -545,9 +557,9 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
               )}
               <Button
                 onClick={() => handleSubmit("chat")}
-                disabled={!input.trim() || isProcessing}
+                disabled={!input.trim() || isProcessing || !isAIReady}
                 className={`px-2.5 py-1.5 text-xs rounded-md transition-colors inline-flex items-center gap-1.5 whitespace-nowrap ${
-                  !input.trim() || isProcessing
+                  !input.trim() || isProcessing || !isAIReady
                     ? MODE_BUTTON_DISABLED
                     : MODE_UI.chat.button
                 }`}
@@ -562,16 +574,16 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
               </Button>
               <Button
                 onClick={() => handleSubmit("build")}
-                disabled={(!input.trim() && !hasIntent) || isProcessing}
+                disabled={(!input.trim() && !hasIntent) || isProcessing || !isAIReady}
                 className={`px-2.5 py-1.5 text-xs rounded-md transition-colors inline-flex items-center gap-1.5 whitespace-nowrap ${
-                  (!input.trim() && !hasIntent) || isProcessing
+                  (!input.trim() && !hasIntent) || isProcessing || !isAIReady
                     ? MODE_BUTTON_DISABLED
                     : MODE_UI.build.button
                 }`}
                 title={
                   input.trim()
-                    ? "Build notebook from this prompt"
-                    : "Build notebook from intent"
+                    ? "Build a diagram or notebook from this description"
+                    : "Build a diagram or notebook from intent"
                 }
               >
                 {activeOperationKind === "build" ? (

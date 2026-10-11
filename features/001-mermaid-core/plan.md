@@ -86,3 +86,14 @@ Validation: typecheck, lint, all 307 tests and production build passed in [CI ru
 
 
 Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, production build and packaged local startup passed in [CI run 38096085339](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339) for code commit `95bd8acc19520c2e75730cf35c0dfa60a96ba56d`. The [local workspace package](https://github.com/Dmitry-dev-pet/mermaid-compiler/actions/runs/38096085339/artifacts/11686050219) includes the Mac launcher, built editor, dependency-free Node Agent, source archive and checksum. Real browser sign-in and the first completed response on the user's subscription remain a separate acceptance step; tests used synthetic session data.
+
+
+## Cloud-alpha usability pass — 2026-10-11
+
+53. [ ] Add safe persisted Simple/Studio workspace mode; default Simple; preserve three-column Studio and notebook/manual rendering.
+54. [ ] Reduce duplicated setup chrome in Simple; explain local browser storage and absent AI access without disabling offline editing.
+55. [ ] Clarify Fix/History labels and empty Summary; avoid calling an unconfigured provider connected.
+56. [ ] Test persisted mode, editor toggle, existing operations, typecheck, lint and production build.
+57. [ ] Verify exact-head CI and authoritative production deployment SHA. Legacy Vercel project lifecycle cleanup is separate and requires reviewed authority.
+
+Out of scope for this pass: live subscription inference, API keys, dynamic cloud storage provider, E2EE, sharing and streaming protocol changes.

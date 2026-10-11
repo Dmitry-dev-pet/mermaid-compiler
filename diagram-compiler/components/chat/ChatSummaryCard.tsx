@@ -15,7 +15,7 @@ const ChatSummaryCard: React.FC<ChatSummaryCardProps> = ({ summaryText }) => {
         {summaryText ? (
           <ChatMarkdownTabs rawText={summaryText} isLatest />
         ) : (
-          <div className="text-[11px] text-slate-400 dark:text-slate-500">Нет summary.</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500">No summary yet.</div>
         )}
       </div>
     </section>
