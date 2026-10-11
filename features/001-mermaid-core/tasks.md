@@ -116,3 +116,14 @@ Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, 
 - [ ] Stop batch sync on error/conflict with truthful final state.
 - [ ] Cover helper recovery with fake providers and run all regression checks.
 - [ ] Cloud backend activation, Supabase schema/RLS policy, E2EE and sharing are separate, opt-in tasks requiring a dedicated active project.
+
+
+## Semantic patch CLI spike — 2026-10-11 (issue #12)
+
+- [ ] Spec-first branch; no main, production, OAuth or cloud mutations.
+- [ ] Implement v1 flowchart standalone-node `set_node_label` with strict SHA and fail-closed safety.
+- [ ] Full Mermaid pre/post parser checks and untouched-byte proof.
+- [ ] CLI JSON inspect/check/diff/apply; dry-run default; guarded `--write`.
+- [ ] Node tests covering supported + rejected forms in issue #12.
+- [ ] GitHub CI gate; open review PR only (no automatic merge).
+- [ ] Separate follow-up for external MCP adapter, AST-equivalence and benchmarks.

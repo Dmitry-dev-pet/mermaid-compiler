@@ -113,3 +113,14 @@ Out of scope for this pass: live subscription inference, API keys, dynamic cloud
 63. [ ] Import the latest cloud bundle as a **new** local project while keeping the user's original local state intact.
 64. [ ] Stop Sync All on the first failed upload/conflict and preserve the relevant status.
 65. [ ] Mock-test conflict resolution and provider failure/cancellation, run normal project CI. Do not activate hidden cloud or create/mutate unrelated Supabase backend.
+
+
+## Semantic patch CLI experiment — 2026-10-11 (issue #12)
+
+66. [ ] Preserve current main; create spec-first feature branch with this contract.
+67. [ ] Implement conservative source-span-preserving flowchart node-label patch module and strict v1 request validation.
+68. [ ] Validate original and candidate with real Mermaid `parse()`; fail closed if validator unavailable.
+69. [ ] Implement JSON CLI `inspect`, `check`, `diff`, `apply` with dry-run default and guarded explicit write.
+70. [ ] Add adversarial and normal corpus tests, plus parser-integrated smoke and isolated CI gate.
+71. [ ] Verify exact-head CI and deliver an unmerged reviewable PR; do not deploy or merge automatically.
+72. [ ] Future: semantic AST-equivalence cross-check, broader node/diagram types, thin MCP adapter, comparative benchmark.
