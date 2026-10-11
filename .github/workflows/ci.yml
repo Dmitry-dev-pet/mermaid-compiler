@@ -52,6 +52,15 @@ jobs:
         continue-on-error: true
         run: npm test
 
+      - name: Test Semantic Patch CLI (real Mermaid parser)
+        id: patch_test
+        continue-on-error: true
+        run: |
+          node --check tools/mermaid-patch/core.mjs
+          node --check tools/mermaid-patch/cli.mjs
+          node --check diagram-compiler/mermaid-node-validate.mjs
+          node --test tools/mermaid-patch/*.test.mjs
+
       - name: Test local ChatGPT Agent
         id: chatgpt_test
         continue-on-error: true
@@ -68,18 +77,21 @@ jobs:
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TEST_OUTCOME: ${{ steps.test.outcome }}
+          PATCH_TEST_OUTCOME: ${{ steps.patch_test.outcome }}
           CHATGPT_TEST_OUTCOME: ${{ steps.chatgpt_test.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
           echo "typecheck=${TYPECHECK_OUTCOME}"
           echo "lint=${LINT_OUTCOME}"
           echo "test=${TEST_OUTCOME}"
+          echo "patch_test=${PATCH_TEST_OUTCOME}"
           echo "chatgpt_test=${CHATGPT_TEST_OUTCOME}"
           echo "build=${BUILD_OUTCOME}"
 
           if [ "${TYPECHECK_OUTCOME}" != "success" ] || \
              [ "${LINT_OUTCOME}" != "success" ] || \
              [ "${TEST_OUTCOME}" != "success" ] || \
+             [ "${PATCH_TEST_OUTCOME}" != "success" ] || \
              [ "${CHATGPT_TEST_OUTCOME}" != "success" ] || \
              [ "${BUILD_OUTCOME}" != "success" ]; then
             exit 1
