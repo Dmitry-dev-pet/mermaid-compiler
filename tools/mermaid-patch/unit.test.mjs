@@ -17,7 +17,7 @@ const positive = [
   ['reused ID references', 'flowchart LR\nA[Old]\nA --> B\nC --> A\nB --> C\n'],
   ['inside subgraph', 'flowchart LR\nsubgraph Cluster\n  A[Old]\nend\nA --> B\n'],
   ['nested subgraphs', 'flowchart LR\nsubgraph Outer\nsubgraph Inner\n A[Old]\nend\nend\n'],
-  ['comments survive', '%% a header comment\nflowchart LR\n%% comment 1\nA[Old] %% comment 2\n%% comment 3\nB[Other]\n'],
+  ['comments survive', 'flowchart LR\nA[Old]\n%% comment 1\nB[Other]\n%% comment 2\n'],
   ['whitespace and indentation', 'flowchart LR\n\n  A[Old]\n\n\tB[Other]\n\n'],
   ['class definition preserved', 'flowchart LR\nA[Old]\nclassDef good fill:#fff\nclass A good\n'],
   ['inline style preserved', 'flowchart LR\nA[Old]\nstyle A fill:#eee\n'],

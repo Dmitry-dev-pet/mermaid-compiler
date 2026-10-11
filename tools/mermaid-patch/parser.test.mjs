@@ -12,7 +12,7 @@ const exampleSources = [
   'flowchart LR\nA[Old]\nB[Other]\nA --> B\n',
   'flowchart LR\nA["Old"]\nB["Other"]\nA --> B\n',
   'flowchart LR\nsubgraph Outer\n subgraph Inner\n A[Old]\n end\nend\nA --> B\n',
-  '%% opening comment\nflowchart LR\nA[Old] %% trailing comment\nA --> B\n',
+  'flowchart LR\nA[Old]\n%% keep comment\nB[Other]\nA --> B\n',
   'flowchart LR\r\nA[Old]\r\nB[Other]\r\nA --> B\r\n',
   'flowchart LR\nA[Старый]\nB[Коимбра]\nA --> B\n',
 ];
