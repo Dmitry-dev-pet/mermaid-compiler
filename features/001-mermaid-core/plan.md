@@ -97,3 +97,10 @@ Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, 
 57. [ ] Verify exact-head CI and authoritative production deployment SHA. Legacy Vercel project lifecycle cleanup is separate and requires reviewed authority.
 
 Out of scope for this pass: live subscription inference, API keys, dynamic cloud storage provider, E2EE, sharing and streaming protocol changes.
+
+
+## Mobile workspace verification — 2026-10-11
+
+58. [ ] Add small-screen Studio Chat/Code/Preview tab navigation, one visible pane at a time, without changing desktop behavior.
+59. [ ] Make header, projects and AI settings fit 320–430px without horizontal overflow; preserve existing controls and safe area.
+60. [ ] Add headless browser viewport tests (mobile 320/390px, desktop), capture screenshot/evidence in CI and verify actual live production after merge.

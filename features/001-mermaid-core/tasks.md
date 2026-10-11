@@ -99,3 +99,11 @@ Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, 
 - [ ] Relabel Fix (attempt count, not errors) and Snapshot (local history checkpoint).
 - [ ] Run Node 22 CI quality gate and exact-commit package smoke; confirm production deployment SHA separately.
 - [ ] Route any legacy Vercel lifecycle cleanup through the reviewed owner; do not delete or relink a project as an incidental UI change.
+
+
+## Mobile workspace — 2026-10-11
+
+- [ ] Replace squeezed Studio columns on narrow viewports with keyboard-accessible Chat / Code / Preview pane selector.
+- [ ] Keep the Simple/mobile chat and preview useful and independent of model credentials; fix header/popover overflow.
+- [ ] Prove no horizontal overflow and stable pane switching in a real headless browser at 320px/390px and verify desktop UI remains intact.
+- [ ] Merge only after typecheck, lint, all unit tests, build and mobile browser checks pass; deploy via reviewed publication and verify canonical SHA.

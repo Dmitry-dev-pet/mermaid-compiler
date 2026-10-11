@@ -521,7 +521,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
         <div className="mt-2 flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              {!simpleMode && <Button
+              <Button
                 onClick={onNewProject}
                 variant="ghost"
                 className="h-auto px-1 py-0 text-xs text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors"
@@ -529,7 +529,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
                 type="button"
               >
                 <Plus size={12} /> New project
-              </Button>}
+              </Button>
               <Button
                 onClick={onClear}
                 variant="ghost"

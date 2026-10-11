@@ -474,7 +474,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
       <Button
         onClick={handleToggleMenu}
         variant="default"
-        className="px-3"
+        className="px-3 max-md:px-2"
       >
         {connectionState.status === 'connected' ? <Wifi size={14} className={statusToneClass} /> : <WifiOff size={14} className={statusToneClass} />}
         <span className="ml-1 text-[10px] max-w-[320px] min-w-0 truncate">
@@ -498,7 +498,7 @@ const AiControlPlaneMenu: React.FC<AiControlPlaneMenuProps> = ({
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-[400px] bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50 max-h-[calc(100vh-5rem)] overflow-auto overscroll-contain">
+        <div className="absolute top-full right-0 mt-2 w-[400px] max-md:!fixed max-md:!left-2 max-md:!right-2 max-md:!w-[calc(100vw-1rem)] max-md:!top-[var(--app-header-height,3rem)] max-md:mt-0 max-md:max-h-[calc(100dvh-6rem)] bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50 max-h-[calc(100vh-5rem)] overflow-auto overscroll-contain">
           <div className="mb-4">
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Provider</label>
             <RadioGroup className="flex-wrap">

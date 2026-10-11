@@ -1,0 +1,49 @@
+name: Mobile viewport smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix diagram-compiler ci
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build SPA
+        run: npm run build
+      - name: Start local preview
+        run: |
+          npm --prefix diagram-compiler run preview -- --host 127.0.0.1 --port 4173 --strictPort > "$RUNNER_TEMP/mobile-preview.log" 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/mobile-preview.log"
+          exit 1
+      - name: Headless viewport and persistence checks
+        run: node scripts/mobile-viewport-smoke.mjs
+      - name: Attach browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mermaid-mobile-viewports
+          path: artifacts/mobile-viewport/*.png
+          if-no-files-found: warn
+          retention-days: 7

@@ -19,8 +19,8 @@ const PreviewHeaderControls: React.FC<PreviewHeaderControlsProps> = ({
   const canNotebookExcalidrawToggle = !tools.isBuildDocsMode && tools.isMarkdownMode && tools.canNotebookExcalidrawToggle;
 
   return (
-    <PanelHeader className="relative h-24 flex flex-col gap-2">
-      <HeaderSection tone="primary" className="uppercase">
+    <PanelHeader className="relative h-24 flex flex-col gap-2 max-md:px-2">
+      <HeaderSection tone="primary" className="uppercase max-md:overflow-x-auto">
         <HeaderRow
           left={
             <PreviewHeaderPinnedMode
@@ -40,7 +40,7 @@ const PreviewHeaderControls: React.FC<PreviewHeaderControlsProps> = ({
         />
       </HeaderSection>
 
-      <HeaderSection tone="secondary">
+      <HeaderSection tone="secondary" className="max-md:overflow-x-auto">
         <HeaderRow
           left={
             <PreviewHeaderStyleMenu

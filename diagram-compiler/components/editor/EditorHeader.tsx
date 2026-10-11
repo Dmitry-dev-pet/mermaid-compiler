@@ -100,7 +100,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   }, [diagramMarkers, isBuildDocsTab, onSelectDiagramStep, selectedStepId]);
 
   return (
-    <PanelHeader className="h-24 flex flex-col gap-2">
+    <PanelHeader className="h-24 flex flex-col gap-2 max-md:px-2">
       <HeaderSection tone="primary" className="uppercase">
         <HeaderRow
           left={
@@ -168,7 +168,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
         />
       </HeaderSection>
 
-      <HeaderSection tone="secondary">
+      <HeaderSection tone="secondary" className="max-md:overflow-x-auto">
         <HeaderRow
           left={
             <>
