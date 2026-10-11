@@ -31,7 +31,7 @@ async function rendered(page) {
     return Array.from(visible.querySelectorAll('svg')).some(
       (svg) => svg.textContent?.includes('Start') && svg.textContent?.includes('Done'),
     );
-  }, { timeout: 20_000 });
+  }, null, { timeout: 20_000 });
 }
 
 try {
@@ -49,6 +49,8 @@ try {
       await overflow(page, viewport.width, 'initial ' + viewport.width);
 
       await group.getByRole('button', { name: 'Studio' }).click();
+      // Persistence is project-scoped: make an explicit new local project before editing.
+      await page.getByRole('button', { name: 'New', exact: true }).click();
       const mobile = viewport.width < 768;
       const nav = page.getByRole('navigation', { name: 'Mobile Studio panes' });
       if (mobile) {
@@ -80,6 +82,7 @@ try {
       await rendered(page);
       await overflow(page, viewport.width, 'simple ' + viewport.width);
       await page.screenshot({ path: output + '/simple-' + viewport.width + '.png', fullPage: true });
+      await page.waitForTimeout(1500);
 
       await page.reload({ waitUntil: 'domcontentloaded' });
       await group.getByRole('button', { name: 'Simple' }).waitFor({ state: 'visible', timeout: 35_000 });
