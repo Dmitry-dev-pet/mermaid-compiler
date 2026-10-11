@@ -534,7 +534,7 @@ function App() {
             {/* Col 1: Chat */}
             <div
               style={isSimpleWorkspace ? undefined : { width: `${appState.columnWidths[0]}%` }}
-              className={`flex flex-col ${isSimpleWorkspace ? "w-full h-[45%] min-h-0 md:h-full md:w-[36%] md:min-w-[320px]" : "min-w-[260px]"}`}
+              className={`flex flex-col ${isSimpleWorkspace ? "w-full h-[58%] min-h-0 md:h-full md:w-[36%] md:min-w-[320px]" : "min-w-[260px]"}`}
             >
               <ChatColumn
                 messages={messages}
@@ -594,7 +594,7 @@ function App() {
 
             <div
               style={isSimpleWorkspace ? undefined : { width: `${editorPreviewTotal}%` }}
-              className={`flex flex-col min-w-0 ${isSimpleWorkspace ? "w-full h-[55%] md:w-[64%] md:h-full" : ""}`}
+              className={`flex flex-col min-w-0 ${isSimpleWorkspace ? "w-full h-[42%] md:w-[64%] md:h-full" : ""}`}
             >
               <div className="flex min-h-0 flex-1">
                 {/* Col 2: Editor */}
