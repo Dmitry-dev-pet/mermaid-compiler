@@ -7,7 +7,7 @@ import type {
   CloudMigrationItem,
   CloudMigrationStatus,
   CloudProjectsStatus,
-  CloudSyncStatus,
+  CloudSyncControls,
 } from '../hooks/studio/useCloudControlPlane';
 import type { ProjectMeta } from '../services/storage';
 import { Input } from './ui/Input';
@@ -43,7 +43,7 @@ type ChatProjectsProps = {
   onThinkingStyleChange: (style: ThinkingStyle) => void;
   storageMode?: StorageMode;
   onStorageModeChange?: (mode: StorageMode) => void;
-  cloudSync?: { status: CloudSyncStatus; syncActive: () => Promise<void>; syncAll: () => Promise<void> };
+  cloudSync?: CloudSyncControls;
   cloudProjects?: {
     status: CloudProjectsStatus;
     projects: ProjectMeta[];
