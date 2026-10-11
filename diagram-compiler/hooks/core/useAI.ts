@@ -34,6 +34,9 @@ export const useAI = () => {
     const attempt = ++connectionAttemptRef.current;
     setConnectionState(prev => ({ ...prev, status: 'connecting', error: undefined }));
     try {
+      if (aiConfig.provider === 'openrouter' && !aiConfig.openRouterKey.trim()) {
+        throw new Error('Enter an OpenRouter API key in AI settings to load models.');
+      }
       if (aiConfig.provider === 'opencode-go' && !getOpenCodeGoApiKey()) {
         throw new Error('Enter your personal OpenCode Go API key to load models.');
       }
