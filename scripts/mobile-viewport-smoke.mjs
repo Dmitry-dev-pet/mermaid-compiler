@@ -68,6 +68,8 @@ try {
       await group.getByRole('button', { name: 'Studio' }).click();
       // Persistence is project-scoped: make an explicit new local project before editing.
       await page.getByRole('button', { name: 'New project', exact: true }).click();
+      // Project creation/hydration is asynchronous, especially on a fast desktop run.
+      await page.waitForTimeout(800);
       const mobile = viewport.width < 768;
       const nav = page.getByRole('navigation', { name: 'Mobile Studio panes' });
       if (mobile) {
@@ -80,6 +82,8 @@ try {
       await editor.waitFor({ state: 'visible', timeout: 10_000 });
       const textarea = editor.locator('textarea').first();
       await textarea.fill(diagram);
+      await page.waitForTimeout(350);
+      assert.equal(await textarea.inputValue(), diagram, 'Editor must retain the new code after project hydration');
       if (mobile) {
         await nav.getByRole('button', { name: 'Preview' }).click();
         await page.getByTestId('workspace-preview').waitFor({ state: 'visible' });

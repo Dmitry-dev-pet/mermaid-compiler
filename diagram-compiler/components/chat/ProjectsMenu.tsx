@@ -18,7 +18,7 @@ import type {
   CloudMigrationItem,
   CloudMigrationStatus,
   CloudProjectsStatus,
-  CloudSyncStatus,
+  CloudSyncControls,
 } from '../../hooks/studio/useCloudControlPlane';
 import type { ProjectMeta } from '../../services/storage';
 import { createCloudProjectsSource, createLocalProjectsSource } from '../../services/projects/projectsSource';
@@ -55,7 +55,7 @@ type ProjectsMenuProps = {
   onTestByoConfig: () => Promise<{ ok: boolean; error?: string }>;
   storageMode?: StorageMode;
   onStorageModeChange?: (mode: StorageMode) => void;
-  cloudSync?: { status: CloudSyncStatus; syncActive: () => Promise<void>; syncAll: () => Promise<void> };
+  cloudSync?: CloudSyncControls;
   cloudProjects?: {
     status: CloudProjectsStatus;
     projects: ProjectMeta[];
@@ -323,6 +323,37 @@ const CloudSection: React.FC<{
       )}
 
       {syncMessage && <InlineStatus kind={syncMessage.status} message={syncMessage.message} />}
+
+      {cloudSync?.conflict && (
+        <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/30">
+          <p className="text-xs font-medium text-amber-900 dark:text-amber-200">
+            Cloud conflict: {cloudSync.conflict.title}
+          </p>
+          <p className="text-[11px] text-slate-600 dark:text-slate-300">
+            Both versions are kept. Choose where to make a separate copy; neither action overwrites the cloud project.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canSync}
+              onClick={() => void cloudSync.saveLocalCopy()}
+              title="Create a second cloud project from the local version without overwriting the existing cloud version"
+            >
+              Save local as new cloud copy
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canSync}
+              onClick={() => void cloudSync.openRemoteCopy()}
+              title="Create a new local session from the current cloud version without touching the original local project"
+            >
+              Open cloud as new local copy
+            </Button>
+          </div>
+        </div>
+      )}
 
       {(cloudMigration || cloudProjects) && (
         <div className="border-t border-[var(--panel-border)] pt-2 space-y-3">

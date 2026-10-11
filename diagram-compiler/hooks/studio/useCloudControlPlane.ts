@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { HistorySession } from '../../services/history/types';
 import type { ImportSessionBundleOptions, SessionBundle } from '../../services/history/bundle';
+import { fetchRemoteConflictCopy, saveLocalConflictCopy } from '../../services/storage/cloudConflictRecovery';
 import {
   createSupabaseByoProvider,
   createSupabaseHostedProvider,
@@ -21,6 +22,22 @@ export type CloudSyncStatus =
   | { kind: 'syncing'; message: string }
   | { kind: 'success'; message: string; syncedAt: number }
   | { kind: 'error'; message: string };
+
+export type CloudSyncConflict = {
+  sessionId: string;
+  remoteProjectId: string;
+  providerKind: StorageProviderKind;
+  title: string;
+};
+
+export type CloudSyncControls = {
+  status: CloudSyncStatus;
+  conflict: CloudSyncConflict | null;
+  syncActive: () => Promise<void>;
+  syncAll: () => Promise<void>;
+  saveLocalCopy: () => Promise<void>;
+  openRemoteCopy: () => Promise<void>;
+};
 
 export type CloudProjectsStatus =
   | { kind: 'idle' }
@@ -69,7 +86,7 @@ export const useCloudControlPlane = (args: {
   openProject: (sessionId: string) => Promise<void> | void;
 }): {
   providerKind: StorageProviderKind;
-  sync: { status: CloudSyncStatus; syncActive: () => Promise<void>; syncAll: () => Promise<void> };
+  sync: CloudSyncControls;
   projects: { status: CloudProjectsStatus; projects: ProjectMeta[]; refresh: () => Promise<void>; importFromCloud: (projectId: string) => Promise<void> };
   migration: {
     status: CloudMigrationStatus;
@@ -88,6 +105,13 @@ export const useCloudControlPlane = (args: {
   const provider = useMemo(() => resolveProvider(mode, byoConfig), [byoConfig, mode]);
 
   const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>({ kind: 'idle' });
+  const [syncConflict, setSyncConflict] = useState<CloudSyncConflict | null>(null);
+
+  useEffect(() => {
+    // A conflict belongs to one provider/connection. Never resolve it using
+    // a different hosted/BYO session after the user switches configuration.
+    setSyncConflict(null);
+  }, [enabled, providerKind, byoConfig.url, byoConfig.anonKey]);
   const [projectsStatus, setProjectsStatus] = useState<CloudProjectsStatus>({ kind: 'idle' });
   const [cloudProjects, setCloudProjects] = useState<ProjectMeta[]>([]);
 
@@ -109,19 +133,20 @@ export const useCloudControlPlane = (args: {
 
   const syncSession = useCallback(
     async (sessionId: string) => {
-      if (!enabled) return;
+      if (!enabled) return false;
+      setSyncConflict(null);
       setSyncStatus({ kind: 'syncing', message: 'Exporting project…' });
 
       const bundle = await exportProjectBundle(sessionId);
       if (!bundle) {
         setSyncStatus({ kind: 'error', message: 'Project not found' });
-        return;
+        return false;
       }
 
       const ready = await ensureProviderReady(provider);
       if (ready.ok === false) {
         setSyncStatus({ kind: 'error', message: ready.error });
-        return;
+        return false;
       }
 
       const blob = encodeProjectBundleToBlob(bundle);
@@ -140,7 +165,7 @@ export const useCloudControlPlane = (args: {
             remoteVersion: meta.version,
           });
           setSyncStatus({ kind: 'success', message: 'Uploaded', syncedAt: Date.now() });
-          return;
+          return true;
         }
 
         setSyncStatus({ kind: 'syncing', message: 'Uploading changes…' });
@@ -156,13 +181,21 @@ export const useCloudControlPlane = (args: {
           remoteVersion: meta.version,
         });
         setSyncStatus({ kind: 'success', message: 'Synced', syncedAt: Date.now() });
+        return true;
       } catch (e: unknown) {
-        if (e instanceof StorageConflictError) {
-          setSyncStatus({ kind: 'error', message: 'Conflict: remote project changed' });
-          return;
+        if (e instanceof StorageConflictError && canReuse && existing) {
+          setSyncConflict({
+            sessionId,
+            remoteProjectId: existing.remoteProjectId,
+            providerKind,
+            title: title || 'Project',
+          });
+          setSyncStatus({ kind: 'error', message: 'Conflict: the cloud project changed. Choose a non-destructive copy below.' });
+          return false;
         }
         const message = e instanceof Error ? e.message : 'Cloud sync failed';
         setSyncStatus({ kind: 'error', message });
+        return false;
       }
     },
     [enabled, exportProjectBundle, provider, providerKind]
@@ -185,9 +218,50 @@ export const useCloudControlPlane = (args: {
     for (let i = 0; i < localProjects.length; i += 1) {
       const p = localProjects[i];
       setSyncStatus({ kind: 'syncing', message: `Syncing ${i + 1}/${localProjects.length}…` });
-      await syncSession(p.id);
+      if (!(await syncSession(p.id))) return;
     }
   }, [enabled, localProjects, syncSession]);
+
+  const saveLocalCopy = useCallback(async () => {
+    const conflict = syncConflict;
+    if (!enabled || !conflict || conflict.providerKind !== providerKind) return;
+    setSyncStatus({ kind: 'syncing', message: 'Saving a separate cloud copy…' });
+    try {
+      const ready = await ensureProviderReady(provider);
+      if (ready.ok === false) throw new Error(ready.error);
+      const bundle = await exportProjectBundle(conflict.sessionId);
+      if (!bundle) throw new Error('The original local project is no longer available.');
+      const meta = await saveLocalConflictCopy(provider, bundle);
+      setCloudLink(conflict.sessionId, {
+        providerKind, remoteProjectId: meta.id, remoteVersion: meta.version,
+      });
+      setSyncConflict(null);
+      setSyncStatus({ kind: 'success', message: 'Local project saved as a new cloud copy. Original remote kept.', syncedAt: Date.now() });
+    } catch (error: unknown) {
+      setSyncStatus({ kind: 'error', message: error instanceof Error ? error.message : 'Failed to save a cloud copy' });
+    }
+  }, [enabled, syncConflict, providerKind, provider, exportProjectBundle]);
+
+  const openRemoteCopy = useCallback(async () => {
+    const conflict = syncConflict;
+    if (!enabled || !conflict || conflict.providerKind !== providerKind) return;
+    setSyncStatus({ kind: 'syncing', message: 'Opening the cloud version as a local copy…' });
+    try {
+      const ready = await ensureProviderReady(provider);
+      if (ready.ok === false) throw new Error(ready.error);
+      const { meta, bundle } = await fetchRemoteConflictCopy(provider, conflict.remoteProjectId);
+      const imported = await importProjectBundle(bundle, { mode: 'new', setActive: true });
+      if (!imported?.id) throw new Error('Could not create a local project copy.');
+      setCloudLink(imported.id, {
+        providerKind, remoteProjectId: meta.id, remoteVersion: meta.version,
+      });
+      await openProject(imported.id);
+      setSyncConflict(null);
+      setSyncStatus({ kind: 'success', message: 'Cloud version opened as a new local project; the original local project is unchanged.', syncedAt: Date.now() });
+    } catch (error: unknown) {
+      setSyncStatus({ kind: 'error', message: error instanceof Error ? error.message : 'Failed to open a cloud copy' });
+    }
+  }, [enabled, syncConflict, providerKind, provider, importProjectBundle, openProject]);
 
   const refresh = useCallback(async () => {
     if (!enabled) return;
@@ -357,7 +431,7 @@ export const useCloudControlPlane = (args: {
 
   return {
     providerKind,
-    sync: { status: syncStatus, syncActive, syncAll },
+    sync: { status: syncStatus, conflict: syncConflict, syncActive, syncAll, saveLocalCopy, openRemoteCopy },
     projects: { status: projectsStatus, projects: cloudProjects, refresh, importFromCloud },
     migration: {
       status: migrationStatus,

@@ -104,3 +104,12 @@ Out of scope for this pass: live subscription inference, API keys, dynamic cloud
 58. [ ] Add small-screen Studio Chat/Code/Preview tab navigation, one visible pane at a time, without changing desktop behavior.
 59. [ ] Make header, projects and AI settings fit 320–430px without horizontal overflow; preserve existing controls and safe area.
 60. [ ] Add headless browser viewport tests (mobile 320/390px, desktop), capture screenshot/evidence in CI and verify actual live production after merge.
+
+
+## Safe cloud conflicts — 2026-10-11
+
+61. [ ] Detect a conflict with structured local project / remote project context and present two recovery actions in the gated Cloud section.
+62. [ ] Save the local bundle to a **new** cloud project, keeping the previous conflicting remote intact.
+63. [ ] Import the latest cloud bundle as a **new** local project while keeping the user's original local state intact.
+64. [ ] Stop Sync All on the first failed upload/conflict and preserve the relevant status.
+65. [ ] Mock-test conflict resolution and provider failure/cancellation, run normal project CI. Do not activate hidden cloud or create/mutate unrelated Supabase backend.

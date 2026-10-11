@@ -107,3 +107,12 @@ Validation: Node 22 typecheck, lint, all 395 editor tests, all 102 Agent tests, 
 - [ ] Keep the Simple/mobile chat and preview useful and independent of model credentials; fix header/popover overflow.
 - [ ] Prove no horizontal overflow and stable pane switching in a real headless browser at 320px/390px and verify desktop UI remains intact.
 - [ ] Merge only after typecheck, lint, all unit tests, build and mobile browser checks pass; deploy via reviewed publication and verify canonical SHA.
+
+
+## Safe cloud conflict recovery — 2026-10-11
+
+- [ ] Keep a structured conflict state, store no project blobs in UI status and prevent cross-provider resolution.
+- [ ] Add explicit Save local copy and Open remote copy controls that never overwrite the older remote version.
+- [ ] Stop batch sync on error/conflict with truthful final state.
+- [ ] Cover helper recovery with fake providers and run all regression checks.
+- [ ] Cloud backend activation, Supabase schema/RLS policy, E2EE and sharing are separate, opt-in tasks requiring a dedicated active project.
