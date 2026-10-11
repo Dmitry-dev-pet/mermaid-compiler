@@ -25,13 +25,30 @@ async function overflow(page, width, label) {
 }
 
 async function rendered(page) {
-  await page.waitForFunction(() => {
-    const visible = document.querySelector('[data-testid="workspace-preview"]');
-    if (!visible) return false;
-    return Array.from(visible.querySelectorAll('svg')).some(
-      (svg) => svg.textContent?.includes('Start') && svg.textContent?.includes('Done'),
-    );
-  }, null, { timeout: 20_000 });
+  try {
+    await page.waitForFunction(() => {
+      const visible = document.querySelector('[data-testid="workspace-preview"]');
+      if (!visible) return false;
+      return Array.from(visible.querySelectorAll('svg')).some(
+        (svg) => svg.textContent?.includes('Start') && svg.textContent?.includes('Done'),
+      );
+    }, null, { timeout: 20_000 });
+  } catch (error) {
+    const detail = await page.evaluate(() => {
+      const p = document.querySelector('[data-testid="workspace-preview"]');
+      const e = document.querySelector('[data-testid="workspace-code"] textarea');
+      return {
+        previewVisible: p ? getComputedStyle(p).display !== 'none' : false,
+        previewCss: p?.className,
+        previewText: p?.textContent?.slice(0, 800),
+        svgCount: p?.querySelectorAll('svg').length,
+        diagramCode: e?.value?.slice(0, 300),
+        workspace: document.querySelector('[aria-label="Workspace view"]')?.textContent?.slice(0, 200),
+      };
+    });
+    console.error('RENDER_DIAGNOSTIC', JSON.stringify(detail));
+    throw error;
+  }
 }
 
 try {
