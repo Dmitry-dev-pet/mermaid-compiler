@@ -4,7 +4,6 @@ import {
   Chrome,
   Cloud,
   Download,
-  Github,
   LogOut,
   RefreshCw,
   Trash2,
@@ -164,19 +163,6 @@ const CloudSection: React.FC<{
     }
   };
 
-  const handleCloudLoginGitHub = async () => {
-    if (cloudBusy) return;
-    setCloudBusy(true);
-    try {
-      setCloudAuthError(null);
-      await auth.loginWithGitHub();
-    } catch (e: unknown) {
-      setCloudAuthError(e instanceof Error ? e.message : 'Login failed');
-    } finally {
-      setCloudBusy(false);
-    }
-  };
-
   const handleCloudLogout = async () => {
     if (cloudBusy) return;
     setCloudBusy(true);
@@ -255,17 +241,6 @@ const CloudSection: React.FC<{
             >
               <Chrome size={12} className="opacity-80" />
               Google
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleCloudLoginGitHub}
-              disabled={cloudBusy || auth.status === 'disabled' || auth.status === 'loading'}
-              className="text-[10px] px-2 py-1 rounded-full text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 gap-1"
-              title="Login with GitHub"
-            >
-              <Github size={12} className="opacity-80" />
-              GitHub
             </Button>
           </div>
         )}
