@@ -323,3 +323,15 @@ Approved user goal: browser sign-in with the user's ChatGPT subscription for the
 - Acceptance: OAuth security and refresh races, protected persistence, same-origin server boundary, account/model lifecycle, completed-only inference, cancellation, credential-free exports and existing frontend regressions; typecheck, lint, tests and production build; a runnable local package for Mac.
 
 Protocol reference: https://developers.openai.com/siwc/token-sharing-open-source
+
+
+## Cloud-alpha usability and release stabilization — 2026-10-11
+
+User-approved scope for this pass: a simpler first-use flow, truthful connection/storage states, and explicit verification of the existing production release path. Do not turn the editor into a one-shot-only generator: Chat, Build, Analyze, Fix, manual source editing, operation logs, Notebook, snapshots and project history remain accessible in Studio.
+
+- Add a **Simple** workspace as the initial/default presentation: chat/specification on the left and rendered result on the right; hide the code/editor pane and its resize handle without deleting project state. An explicit **Studio** switch restores the existing three-column editor and settings. Persist this UI preference locally; invalid/unavailable storage must fall back safely. Do not change saved Mermaid code or project sessions on mode switches.
+- In Simple mode, keep Chat and Build separate operations, show whether an AI connection is configured, allow local manual diagrams to render without AI, and explain that project autosave is **in this browser** rather than cloud sync. Notebook/advanced editing remain in Studio; existing notebook projects must still display a meaningful preview in Simple.
+- Reduce confusing control labels: the Fix button reports an action, not an error count (5 is a maximum number of attempts); Snapshot means a local history checkpoint. Keep UI language consistent and avoid implying that a model, subscription, cloud or persistent storage is verified when it is not.
+- Do not disable manual rendering, SVG/PNG export menus, local history, or explicit AI provider selection. Preserve no-fallback rules on subscription and quota failures. No real OpenCode Go request or credential is part of automated acceptance.
+- Test workspace-mode parsing/persistence and mode-switch presentation, run typecheck/lint/unit tests/build and verify the exact PR head. Separately inspect Vercel production, the misconfigured legacy deployment, and the reviewed release route; never assume a green GitHub CI means the public site contains that commit.
+- Separate follow-ups, not acceptance requirements of this UI pass: stream Go responses and consumption metrics; full cloud sync/E2EE/collaboration, and personal ChatGPT/Go inference acceptance. Vercel project deletion/unlinking is privileged lifecycle work and requires an appropriate reviewed route.
