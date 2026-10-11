@@ -335,3 +335,10 @@ User-approved scope for this pass: a simpler first-use flow, truthful connection
 - Do not disable manual rendering, SVG/PNG export menus, local history, or explicit AI provider selection. Preserve no-fallback rules on subscription and quota failures. No real OpenCode Go request or credential is part of automated acceptance.
 - Test workspace-mode parsing/persistence and mode-switch presentation, run typecheck/lint/unit tests/build and verify the exact PR head. Separately inspect Vercel production, the misconfigured legacy deployment, and the reviewed release route; never assume a green GitHub CI means the public site contains that commit.
 - Separate follow-ups, not acceptance requirements of this UI pass: stream Go responses and consumption metrics; full cloud sync/E2EE/collaboration, and personal ChatGPT/Go inference acceptance. Vercel project deletion/unlinking is privileged lifecycle work and requires an appropriate reviewed route.
+
+
+## Mobile-first workspace navigation — 2026-10-11
+
+User approved continuation after the verified Simple/Studio desktop release. At narrow viewports (320–430 CSS px), the Studio must not expose three squeezed fixed-min-width columns. Present mutually exclusive tabs **Chat**, **Code** and **Preview** while keeping each mounted so project/code/notebook state survives transitions. Simple can remain vertically stacked with chat input and rendered result, but may not cause horizontal page overflow. Header/AI popovers, project menu and action buttons must fit inside the viewport, remain keyboard accessible and preserve their existing semantics. Desktop resizers/three-column Studio must remain unchanged. Do not change AI credentials, inference semantics, Supabase modes or any project data.
+
+Acceptance: browser viewport smoke at 390×844, 320×700 and desktop; assert no page horizontal overflow, all primary navigation reachable, code editable in mobile Studio, switching panes retains code and preview, Simple controls are not clipped, and project/history persists across reload. Run existing quality gate. No paid inference or account sign-in required.
