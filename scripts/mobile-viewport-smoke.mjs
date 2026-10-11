@@ -67,7 +67,7 @@ try {
 
       await group.getByRole('button', { name: 'Studio' }).click();
       // Persistence is project-scoped: make an explicit new local project before editing.
-      await page.getByRole('button', { name: 'New', exact: true }).click();
+      await page.getByRole('button', { name: 'New project', exact: true }).click();
       const mobile = viewport.width < 768;
       const nav = page.getByRole('navigation', { name: 'Mobile Studio panes' });
       if (mobile) {
