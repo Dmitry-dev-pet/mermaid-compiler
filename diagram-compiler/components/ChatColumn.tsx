@@ -264,7 +264,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
 
   const handleSubmit = (mode: "chat" | "build", e?: React.FormEvent) => {
     e?.preventDefault();
-    if (isProcessing) return;
+    if (isProcessing || !isAIReady) return;
 
     onClearProjectPreview();
 
