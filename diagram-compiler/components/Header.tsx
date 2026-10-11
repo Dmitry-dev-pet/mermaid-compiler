@@ -153,12 +153,12 @@ const Header: React.FC<HeaderProps> = ({
     <PanelHeader
       as="header"
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 grid items-center gap-0 h-12 shrink-0 z-50 transition-colors ${workspaceMode === "simple" ? "max-md:flex max-md:flex-wrap max-md:h-auto max-md:gap-x-2 max-md:gap-y-1 max-md:px-2 max-md:py-1" : ""}`}
+      className={`fixed top-0 left-0 right-0 grid items-center gap-0 h-12 shrink-0 z-50 transition-colors max-md:flex max-md:flex-wrap max-md:h-auto max-md:gap-x-2 max-md:gap-y-1 max-md:px-2 max-md:py-1`}
       style={{
         gridTemplateColumns: `minmax(260px, ${chatColumnWidthPercent}%) 0.25rem minmax(0, 1fr) auto`,
       }}
     >
-      <div className="flex items-center gap-4 min-w-0 pr-2 max-md:gap-2">
+      <div className="flex items-center gap-4 min-w-0 pr-2 max-md:w-full max-md:flex-wrap max-md:gap-2">
         <div className="flex items-center gap-2 shrink-0">
           <h1 className="font-bold text-lg tracking-tight text-slate-800 dark:text-slate-100 max-md:text-sm">Mermaid Compiler</h1>
           <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/50 dark:text-blue-300 max-md:hidden">
@@ -170,7 +170,7 @@ const Header: React.FC<HeaderProps> = ({
 
       <div className="h-full w-1 bg-transparent max-md:hidden" aria-hidden="true" />
 
-      <div className="min-w-0 flex items-center gap-2">
+      <div className="min-w-0 flex items-center gap-2 max-md:w-full max-md:overflow-x-auto">
         <div role="group" aria-label="Workspace view" className="flex shrink-0 items-center gap-1">
           <Button type="button" variant={workspaceMode === 'simple' ? 'primary' : 'ghost'} aria-pressed={workspaceMode === 'simple'} onClick={() => onWorkspaceModeChange('simple')} title="Chat and diagram preview">Simple</Button>
           <Button type="button" variant={workspaceMode === 'studio' ? 'primary' : 'ghost'} aria-pressed={workspaceMode === 'studio'} onClick={() => onWorkspaceModeChange('studio')} title="Show code editor, history and advanced tools">Studio</Button>
@@ -178,7 +178,7 @@ const Header: React.FC<HeaderProps> = ({
         <HeaderNotebookSlot>{notebookTabs}</HeaderNotebookSlot>
       </div>
 
-      <div className="flex items-center gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-medium pl-3 max-md:gap-2 max-md:pl-0">
+      <div className="flex items-center gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-medium pl-3 max-md:w-full max-md:gap-2 max-md:pl-0>
         <AiControlPlaneMenu
           aiConfig={aiConfig}
           modelParams={modelParams}
