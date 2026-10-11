@@ -6,6 +6,7 @@ import PanelHeader from './ui/PanelHeader';
 import { Button } from './ui/Button';
 import AiControlPlaneMenu from './header/AiControlPlaneMenu';
 import ThemeMenu from './header/ThemeMenu';
+import type { WorkspaceMode } from '../utils/workspaceMode';
 import { useAuth } from '../contexts/auth';
 
 interface HeaderProps {
@@ -18,6 +19,8 @@ interface HeaderProps {
   onDisconnect: () => void;
   isProcessing?: boolean;
   chatColumnWidthPercent: number;
+  workspaceMode: WorkspaceMode;
+  onWorkspaceModeChange: (mode: WorkspaceMode) => void;
   theme: ThemePresetId;
   onThemeChange: (theme: ThemePresetId) => void;
   llmTimeoutMs: number;
@@ -45,6 +48,8 @@ const Header: React.FC<HeaderProps> = ({
   onDisconnect,
   isProcessing = false,
   chatColumnWidthPercent,
+  workspaceMode,
+  onWorkspaceModeChange,
   theme,
   onThemeChange,
   llmTimeoutMs,
@@ -165,7 +170,11 @@ const Header: React.FC<HeaderProps> = ({
 
       <div className="h-full w-1 bg-transparent" aria-hidden="true" />
 
-      <div className="min-w-0">
+      <div className="min-w-0 flex items-center gap-2">
+        <div role="group" aria-label="Workspace view" className="flex shrink-0 items-center gap-1">
+          <Button type="button" variant={workspaceMode === 'simple' ? 'primary' : 'ghost'} aria-pressed={workspaceMode === 'simple'} onClick={() => onWorkspaceModeChange('simple')} title="Chat and diagram preview">Simple</Button>
+          <Button type="button" variant={workspaceMode === 'studio' ? 'primary' : 'ghost'} aria-pressed={workspaceMode === 'studio'} onClick={() => onWorkspaceModeChange('studio')} title="Show code editor, history and advanced tools">Studio</Button>
+        </div>
         <HeaderNotebookSlot>{notebookTabs}</HeaderNotebookSlot>
       </div>
 
