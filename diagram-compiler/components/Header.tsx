@@ -178,7 +178,7 @@ const Header: React.FC<HeaderProps> = ({
         <HeaderNotebookSlot>{notebookTabs}</HeaderNotebookSlot>
       </div>
 
-      <div className="flex items-center gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-medium pl-3 max-md:w-full max-md:gap-2 max-md:pl-0>
+      <div className="flex items-center gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-medium pl-3 max-md:w-full max-md:gap-2 max-md:pl-0">
         <AiControlPlaneMenu
           aiConfig={aiConfig}
           modelParams={modelParams}
