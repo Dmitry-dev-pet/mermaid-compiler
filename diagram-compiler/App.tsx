@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from "react"; // No need for useCallback anymore directly here
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // No need for useCallback anymore directly here
 import Header from "./components/Header";
+import { readWorkspaceMode, saveWorkspaceMode, type WorkspaceMode } from "./utils/workspaceMode";
 import ChatProjects from "./components/ChatProjects";
 import ChatColumn from "./components/ChatColumn";
 import EditorColumn from "./components/EditorColumn";
@@ -139,6 +140,11 @@ function App() {
 	    whiteboardBundleJson,
     saveWhiteboardForCurrentRevision,
   } = useDiagramStudio();
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(readWorkspaceMode);
+  useEffect(() => { saveWorkspaceMode(workspaceMode); }, [workspaceMode]);
+  const isSimpleWorkspace = workspaceMode === "simple";
+  const isAIReady = connectionState.status === "connected" && Boolean(aiConfig.selectedModelId);
+
   const buildDocsSystemPrompts = {
     chat: {
       raw: promptPreviewByMode.chat?.systemPrompt ?? "",
@@ -472,12 +478,14 @@ function App() {
         onConnect={connectAI}
         onDisconnect={disconnectAI}
         isProcessing={isProcessing}
-        chatColumnWidthPercent={appState.columnWidths[0]}
+        chatColumnWidthPercent={isSimpleWorkspace ? 36 : appState.columnWidths[0]}
+        workspaceMode={workspaceMode}
+        onWorkspaceModeChange={setWorkspaceMode}
         theme={appState.theme}
         onThemeChange={setThemePreset}
         llmTimeoutMs={appState.llmTimeoutMs}
         onLLMTimeoutMsChange={setLLMTimeoutMs}
-        notebookTabs={notebookTabs}
+        notebookTabs={isSimpleWorkspace ? undefined : notebookTabs}
         projectsHeader={
           <ChatProjects
             mode="header"
@@ -515,7 +523,7 @@ function App() {
       />
 
       <div
-        className="flex overflow-hidden relative"
+        className={`flex overflow-hidden relative ${isSimpleWorkspace ? "max-md:flex-col" : ""}`}
         style={{
           marginTop: headerHeightVar,
           height: `calc(100vh - ${headerHeightVar})`,
@@ -525,11 +533,13 @@ function App() {
           <>
             {/* Col 1: Chat */}
             <div
-              style={{ width: `${appState.columnWidths[0]}%` }}
-              className="flex flex-col min-w-[260px]"
+              style={isSimpleWorkspace ? undefined : { width: `${appState.columnWidths[0]}%` }}
+              className={`flex flex-col ${isSimpleWorkspace ? "w-full h-[45%] min-h-0 md:h-full md:w-[36%] md:min-w-[320px]" : "min-w-[260px]"}`}
             >
               <ChatColumn
                 messages={messages}
+                simpleMode={isSimpleWorkspace}
+                isAIReady={isAIReady}
                 onChat={handleChatMessage}
                 onBuild={handleBuildFromPrompt}
                 onClear={clearMessages}
@@ -578,19 +588,19 @@ function App() {
 
             {/* Resizer 1 */}
             <div
-              className="resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors"
-              onMouseDown={() => startResize(0)}
+              className={`resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors ${isSimpleWorkspace ? "hidden" : ""}`}
+              onMouseDown={isSimpleWorkspace ? undefined : () => startResize(0)}
             ></div>
 
             <div
-              style={{ width: `${editorPreviewTotal}%` }}
-              className="flex flex-col min-w-0"
+              style={isSimpleWorkspace ? undefined : { width: `${editorPreviewTotal}%` }}
+              className={`flex flex-col min-w-0 ${isSimpleWorkspace ? "w-full h-[55%] md:w-[64%] md:h-full" : ""}`}
             >
               <div className="flex min-h-0 flex-1">
                 {/* Col 2: Editor */}
                 <div
-                  style={{ width: `${editorShare}%` }}
-                  className="flex flex-col min-w-[300px]"
+                  style={isSimpleWorkspace ? undefined : { width: `${editorShare}%` }}
+                   className={`flex-col min-w-[300px] ${isSimpleWorkspace ? "hidden" : "flex"}`}
                 >
                   <EditorColumn
                     mermaidState={mermaidStateForView}
@@ -600,11 +610,7 @@ function App() {
                     onSnapshot={
                       isProjectPreview ? () => {} : handleManualSnapshot
                     }
-                    isAIReady={
-                      !isProjectPreview &&
-                      connectionState.status === "connected" &&
-                      !!aiConfig.selectedModelId
-                    }
+                    isAIReady={!isProjectPreview && isAIReady}
                     isProcessing={isProcessing}
                     activeOperationKind={activeOperationKind}
                     isReadOnly={isProjectPreview}
@@ -650,13 +656,13 @@ function App() {
 
                 {/* Resizer 2 */}
                 <div
-                  className="resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors"
-                  onMouseDown={() => startResize(1)}
+                  className={`resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors ${isSimpleWorkspace ? "hidden" : ""}`}
+                  onMouseDown={isSimpleWorkspace ? undefined : () => startResize(1)}
                 ></div>
 
                 {/* Col 3: Preview */}
                 <div
-                  style={{ width: `${previewShare}%` }}
+                  style={{ width: isSimpleWorkspace ? "100%" : `${previewShare}%` }}
                   className="flex flex-col min-w-[300px]"
                 >
                   <PreviewColumn
@@ -778,7 +784,7 @@ function App() {
                         setFlowchartCurve(code, curve),
                       );
                     }}
-                    activeEditorTab={editorTabForView}
+                    activeEditorTab={isSimpleWorkspace && editorTabForView === "build_docs" ? "code" : editorTabForView}
                     docsMode={docsMode}
                     buildDocsSystemPrompts={buildDocsSystemPrompts}
                     systemPromptRawByMode={systemPromptRawByMode}
@@ -936,7 +942,7 @@ function App() {
                 }
                 applyInlineUpdate((code) => setFlowchartCurve(code, curve));
               }}
-              activeEditorTab={editorTabForView}
+              activeEditorTab={isSimpleWorkspace && editorTabForView === "build_docs" ? "code" : editorTabForView}
               docsMode={docsMode}
               buildDocsSystemPrompts={buildDocsSystemPrompts}
               systemPromptRawByMode={systemPromptRawByMode}
