@@ -161,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-4 min-w-0 pr-2 max-md:w-full max-md:flex-wrap max-md:gap-2">
         <div className="flex items-center gap-2 shrink-0">
           <h1 className="font-bold text-lg tracking-tight text-slate-800 dark:text-slate-100 max-md:text-sm">Mermaid Compiler</h1>
-          <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/50 dark:text-blue-300 max-md:hidden">
+          <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/50 dark:text-blue-300 max-2xl:hidden">
             Public alpha
           </span>
         </div>
