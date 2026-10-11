@@ -204,13 +204,13 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 onClick={onFixSyntax}
                 disabled={!isAIReady || isProcessing || !canFix}
                 className={`${canFix ? MODE_UI.fix.button : MODE_BUTTON_DISABLED} normal-case tracking-normal`}
-                title={`Attempt to fix syntax errors (up to ${AUTO_FIX_MAX_ATTEMPTS} tries)`}
+                title={`Fix syntax using AI (up to ${AUTO_FIX_MAX_ATTEMPTS} attempts, not an error count)`}
               >
                 <RefreshCw
                   size={12}
                   className={isFixing ? "animate-spin" : ""}
                 />{" "}
-                Fix ({AUTO_FIX_MAX_ATTEMPTS})
+                Fix syntax
               </Button>
 
               <Button
@@ -221,9 +221,9 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     ? "text-white bg-slate-700 hover:bg-slate-800 border border-slate-700"
                     : "text-slate-400 bg-slate-200 dark:bg-slate-800 dark:text-slate-500 border border-slate-300/60 dark:border-slate-500/60"
                 } normal-case tracking-normal`}
-                title="Save current diagram state to history"
+                title="Save a checkpoint in local project history"
               >
-                <Bookmark size={12} /> Snapshot
+                <Bookmark size={12} /> Checkpoint
               </Button>
               {!!historyChips.length && (
                 <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
