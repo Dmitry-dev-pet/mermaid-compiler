@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // No need for useCallback anymore directly here
 import Header from "./components/Header";
+import MobileStudioTabs, { type MobileStudioPane } from "./components/MobileStudioTabs";
 import { readWorkspaceMode, saveWorkspaceMode, type WorkspaceMode } from "./utils/workspaceMode";
 import ChatProjects from "./components/ChatProjects";
 import ChatColumn from "./components/ChatColumn";
@@ -141,7 +142,13 @@ function App() {
     saveWhiteboardForCurrentRevision,
   } = useDiagramStudio();
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(readWorkspaceMode);
+  const [mobileStudioPane, setMobileStudioPane] = useState<MobileStudioPane>("chat");
   useEffect(() => { saveWorkspaceMode(workspaceMode); }, [workspaceMode]);
+  useEffect(() => {
+    // Refit preview when its mobile pane becomes visible without remounting it.
+    const frame = window.requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    return () => window.cancelAnimationFrame(frame);
+  }, [mobileStudioPane, workspaceMode]);
   const isSimpleWorkspace = workspaceMode === "simple";
   const isAIReady = connectionState.status === "connected" && Boolean(aiConfig.selectedModelId);
 
@@ -523,7 +530,7 @@ function App() {
       />
 
       <div
-        className={`flex overflow-hidden relative ${isSimpleWorkspace ? "max-md:flex-col" : ""}`}
+        className="flex overflow-hidden relative max-md:flex-col"
         style={{
           marginTop: headerHeightVar,
           height: `calc(100vh - ${headerHeightVar})`,
@@ -531,10 +538,12 @@ function App() {
       >
         {!appState.isPreviewFullScreen ? (
           <>
+            {!isSimpleWorkspace && <MobileStudioTabs activePane={mobileStudioPane} onSelect={setMobileStudioPane} />}
             {/* Col 1: Chat */}
             <div
+              data-testid="workspace-chat"
               style={isSimpleWorkspace ? undefined : { width: `${appState.columnWidths[0]}%` }}
-              className={`flex flex-col ${isSimpleWorkspace ? "w-full h-[58%] min-h-0 md:h-full md:w-[36%] md:min-w-[320px]" : "min-w-[260px]"}`}
+              className={`flex flex-col ${isSimpleWorkspace ? "w-full h-[58%] min-h-0 md:h-full md:w-[36%] md:min-w-[320px]" : `min-w-[260px] max-md:!w-full max-md:!min-w-0 max-md:flex-1 max-md:min-h-0 ${mobileStudioPane !== "chat" ? "max-md:hidden" : ""}`}`}
             >
               <ChatColumn
                 messages={messages}
@@ -588,19 +597,20 @@ function App() {
 
             {/* Resizer 1 */}
             <div
-              className={`resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors ${isSimpleWorkspace ? "hidden" : ""}`}
+              className={`resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors ${isSimpleWorkspace ? "hidden" : "max-md:hidden"}`}
               onMouseDown={isSimpleWorkspace ? undefined : () => startResize(0)}
             ></div>
 
             <div
               style={isSimpleWorkspace ? undefined : { width: `${editorPreviewTotal}%` }}
-              className={`flex flex-col min-w-0 ${isSimpleWorkspace ? "w-full h-[42%] md:w-[64%] md:h-full" : ""}`}
+              className={`flex flex-col min-w-0 ${isSimpleWorkspace ? "w-full h-[42%] md:w-[64%] md:h-full" : `max-md:!w-full max-md:flex-1 max-md:min-h-0 ${mobileStudioPane === "chat" ? "max-md:hidden" : ""}`}`}
             >
               <div className="flex min-h-0 flex-1">
                 {/* Col 2: Editor */}
                 <div
+                  data-testid="workspace-code"
                   style={isSimpleWorkspace ? undefined : { width: `${editorShare}%` }}
-                   className={`flex-col min-w-[300px] ${isSimpleWorkspace ? "hidden" : "flex"}`}
+                  className={`flex-col min-w-[300px] ${isSimpleWorkspace ? "hidden" : `flex max-md:!w-full max-md:!min-w-0 ${mobileStudioPane !== "code" ? "max-md:hidden" : ""}`}`}
                 >
                   <EditorColumn
                     mermaidState={mermaidStateForView}
@@ -656,14 +666,15 @@ function App() {
 
                 {/* Resizer 2 */}
                 <div
-                  className={`resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors ${isSimpleWorkspace ? "hidden" : ""}`}
+                  className={`resizer w-1 hover:w-1 bg-slate-200 dark:bg-slate-800 hover:bg-blue-400 cursor-col-resize z-10 transition-colors ${isSimpleWorkspace ? "hidden" : "max-md:hidden"}`}
                   onMouseDown={isSimpleWorkspace ? undefined : () => startResize(1)}
                 ></div>
 
                 {/* Col 3: Preview */}
                 <div
+                  data-testid="workspace-preview"
                   style={{ width: isSimpleWorkspace ? "100%" : `${previewShare}%` }}
-                  className="flex flex-col min-w-[300px]"
+                  className={`flex flex-col min-w-[300px] ${isSimpleWorkspace ? "max-md:!min-w-0" : `max-md:!w-full max-md:!min-w-0 ${mobileStudioPane !== "preview" ? "max-md:hidden" : ""}`}`}
                 >
                   <PreviewColumn
                     mermaidState={mermaidStateForView}
