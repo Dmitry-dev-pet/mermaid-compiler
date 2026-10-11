@@ -495,8 +495,8 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
       </div>
 
       <div
-        className="group relative h-4 cursor-row-resize flex items-center justify-center bg-transparent"
-        onMouseDown={onResizeStart}
+        className={`group relative h-4 cursor-row-resize items-center justify-center bg-transparent ${simpleMode ? "hidden" : "flex"}`}
+        onMouseDown={simpleMode ? undefined : onResizeStart}
         title="Resize input"
       >
         <div className="h-px w-full bg-slate-200 dark:bg-slate-800" />
@@ -506,7 +506,7 @@ const ChatColumn: React.FC<ChatColumnProps> = ({
       {/* Composer */}
       <div
         className="flex flex-col p-3 bg-transparent"
-        style={{ height: composerHeight }}
+        style={{ height: simpleMode ? Math.min(composerHeight, 160) : composerHeight }}
       >
         <div className="relative flex-1 min-h-0">
           <textarea
