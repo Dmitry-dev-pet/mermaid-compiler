@@ -60,6 +60,7 @@ type ChatProjectsProps = {
     reset: () => void;
   };
   mode?: 'header' | 'panel';
+  simpleMode?: boolean;
   chatStatus?: 'idle' | 'running';
 };
 
@@ -93,6 +94,7 @@ const ChatProjects: React.FC<ChatProjectsProps> = ({
   cloudProjects,
   cloudMigration,
   mode = 'panel',
+  simpleMode = false,
   chatStatus = 'idle',
 }) => {
   const isHeaderMode = mode === 'header';
@@ -259,7 +261,7 @@ const ChatProjects: React.FC<ChatProjectsProps> = ({
       className={
         isHeaderMode
           ? 'relative flex items-center gap-3 min-w-0 w-full'
-          : 'relative h-24 px-4 py-2 border-b bg-transparent flex flex-col gap-2'
+          : `relative px-4 py-2 border-b bg-transparent flex flex-col gap-2 ${simpleMode ? 'h-16' : 'h-24'}`
       }
       style={
         isHeaderMode
@@ -365,7 +367,7 @@ const ChatProjects: React.FC<ChatProjectsProps> = ({
               {chatStatus === 'running' ? 'Running' : 'Idle'}
             </span>
           </div>
-          <div className="flex items-center justify-end gap-3 text-[11px] text-slate-500 dark:text-slate-400 min-h-7">
+          {!simpleMode ? <div className="flex items-center justify-end gap-3 text-[11px] text-slate-500 dark:text-slate-400 min-h-7">
             <div className="flex items-center gap-2">
               <span>Style</span>
               <Select
@@ -393,7 +395,7 @@ const ChatProjects: React.FC<ChatProjectsProps> = ({
               onToggleOpen={openDiagramTypePicker}
               onRootRef={registerDiagramTypePickerRoot('active')}
             />
-          </div>
+          </div> : <span className="text-[10px] text-slate-500 dark:text-slate-400">Auto-saved in this browser · not synced across devices</span>}
         </>
       )}
 
