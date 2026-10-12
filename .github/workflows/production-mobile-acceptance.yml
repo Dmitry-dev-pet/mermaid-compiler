@@ -1,0 +1,101 @@
+name: Production mobile acceptance
+
+# Verify the *published* site independently of local build/CI success.
+# Vercel dispatches a deployment event after publishing; no Vercel token needed.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/production-mobile-acceptance.yml'
+      - 'scripts/mobile-viewport-smoke.mjs'
+  workflow_dispatch: {}
+  repository_dispatch:
+    types:
+      - 'vercel.deployment.success'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-mobile-acceptance-${{ github.event.client_payload.id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  production-mobile:
+    # The repository also has an obsolete Vercel project named "mermaid-compiller".
+    # Never treat its deployment events as acceptance evidence for this project.
+    if: >-
+      github.event_name != 'repository_dispatch' ||
+      (
+        github.event.client_payload.project.id == 'prj_ehD1PS5ffV9HI1OTzJhELGyf6ioS' &&
+        github.event.client_payload.environment == 'production' &&
+        github.event.client_payload.git.ref == 'main' &&
+        contains(join(github.event.client_payload.alias, ','), 'mermaid-compiler.vercel.app')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout deployed source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.git.sha || github.sha }}
+
+      - name: Verify source identity from Vercel event
+        if: github.event_name == 'repository_dispatch'
+        shell: bash
+        env:
+          DEPLOYED_SHA: ${{ github.event.client_payload.git.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$DEPLOYED_SHA"
+          echo "Verified Vercel deployment source SHA: $DEPLOYED_SHA"
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install browser test dependencies
+        run: |
+          npm ci
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Test real public production UX
+        env:
+          MERMAID_BASE_URL: https://mermaid-compiler.vercel.app/
+          MERMAID_SCREENSHOTS: artifacts/production-mobile-viewport
+        run: node scripts/mobile-viewport-smoke.mjs
+
+      - name: Attach production viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mermaid-production-mobile-viewports
+          path: artifacts/production-mobile-viewport/*.png
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Summarize the acceptance scope
+        if: always()
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SOURCE_SHA: ${{ github.event.client_payload.git.sha }}
+          DEPLOYMENT_ID: ${{ github.event.client_payload.id }}
+        run: |
+          {
+            echo '## Mermaid production browser acceptance'
+            echo '- Live URL: https://mermaid-compiler.vercel.app/'
+            echo "- Trigger: $EVENT_NAME"
+            echo "- Checked out source: `$(git rev-parse HEAD)`"
+            if [ "$EVENT_NAME" = 'repository_dispatch' ]; then
+              echo "- Vercel deployment SHA: `$SOURCE_SHA`"
+              echo "- Vercel deployment ID: `$DEPLOYMENT_ID`"
+            else
+              echo '- Note: manual/PR test proves browser behavior only; separately verify which SHA Vercel has published.'
+            fi
+            echo '- Viewports: 320x700, 390x844, 1280x800'
+            echo '- Scope: public editor, manual Mermaid rendering, pane navigation, reload/local persistence and page overflow.'
+            echo '- Excluded: paid AI inference, private cloud sync, personal credentials.'
+          } >> "$GITHUB_STEP_SUMMARY"
