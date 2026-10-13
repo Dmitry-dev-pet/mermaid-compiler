@@ -93,4 +93,4 @@ jobs:
             artifacts/mermaid-chatgpt-local.tar.gz
             artifacts/mermaid-chatgpt-local.tar.gz.sha256
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
