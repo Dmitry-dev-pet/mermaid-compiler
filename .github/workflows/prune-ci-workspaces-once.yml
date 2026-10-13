@@ -1,0 +1,67 @@
+name: One-time cleanup of duplicate CI workspaces
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/prune-ci-workspaces-once.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+  pull-requests: read
+concurrency:
+  group: mermaid-ci-workspace-cleanup-once
+  cancel-in-progress: false
+jobs:
+  prune:
+    if: ${{ github.repository == 'Dmitry-dev-pet/mermaid-compiler' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Remove only enumerated superseded CI artifacts
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const repo = context.repo;
+            const apply = context.eventName === 'push';
+            const targets = [11777169230,11687733915,11688301517,11687773178,11687277627,11687513007,11687248505,11687731946,11687337385,11686347413,11686053020,11687202001,11686382020,11686785434,11686075463,11686050219];
+            const protectedIds = new Set([11777914832,11687474675,11698022544]);
+            const now = Date.now();
+            const cutoff = now - 24 * 3600 * 1000;
+            const openPrs = await github.paginate(github.rest.pulls.list, {...repo, state:'open', per_page:100});
+            const openHeads = new Set(openPrs.map(pr => pr.head.sha));
+            const openBranches = new Set(openPrs.map(pr => pr.head.ref));
+            let deleted = 0, freed = 0, missing = 0;
+            for (const artifact_id of targets) {
+              if (protectedIds.has(artifact_id)) throw Error('Protected artifact selected: ' + artifact_id);
+              let a;
+              try {
+                a = (await github.rest.actions.getArtifact({...repo, artifact_id})).data;
+              } catch (e) {
+                if (e.status === 404) { core.info('GONE ' + artifact_id); missing++; continue; }
+                throw e;
+              }
+              if (a.name !== 'mermaid-chatgpt-local' || a.expired ||
+                  new Date(a.created_at).getTime() > cutoff ||
+                  !a.workflow_run?.id) {
+                throw Error('Artifact metadata not eligible: ' + artifact_id);
+              }
+              const run = (await github.rest.actions.getWorkflowRun({...repo, run_id:a.workflow_run.id})).data;
+              if (run.status !== 'completed' || run.conclusion !== 'success' ||
+                  run.name !== 'CI' || openHeads.has(run.head_sha) ||
+                  openBranches.has(run.head_branch)) {
+                throw Error('Run is not safely superseded: ' + artifact_id);
+              }
+              if (apply) {
+                await github.rest.actions.deleteArtifact({...repo, artifact_id});
+                core.info('DELETED ' + artifact_id + ' bytes=' + a.size_in_bytes);
+              } else {
+                core.info('DRY_RUN ' + artifact_id + ' bytes=' + a.size_in_bytes);
+              }
+              deleted++;
+              freed += a.size_in_bytes;
+            }
+            await core.summary.addHeading('One-time Mermaid CI artifact cleanup')
+              .addRaw('mode=' + (apply?'APPLY':'DRY_RUN') + '\n\n')
+              .addRaw('selected=' + deleted + ', missing=' + missing + ', bytes=' + freed + '\n\n')
+              .addRaw('protected artifact IDs: ' + [...protectedIds].join(', ') + '\n').write();
+            core.info(JSON.stringify({applied:apply, selected:deleted, missing, bytes:freed}));
