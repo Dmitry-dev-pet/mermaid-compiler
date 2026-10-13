@@ -1,0 +1,146 @@
+name: Prune old Mermaid CI workspace artifacts
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/prune-old-ci-workspaces.yml]
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Explicitly apply deletions; default is dry-run"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: mermaid-ci-artifact-prune-once
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: ${{ github.repository == 'Dmitry-dev-pet/mermaid-compiler' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APPLY: ${{ github.event_name == 'push' || inputs.apply == true }}
+    steps:
+      - name: Prune only old successful redundant CI workspaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections
+          import datetime as dt
+          import json
+          import os
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          REPO = "Dmitry-dev-pet/mermaid-compiler"
+          NAME = "mermaid-chatgpt-local"
+          CUTOFF = dt.datetime(2026, 10, 13, 19, 30, tzinfo=dt.timezone.utc)
+          MAX_DELETE = 50
+          MAX_BYTES = 500 * 1024 * 1024
+          assert os.environ["GITHUB_REPOSITORY"] == REPO
+          assert os.environ["GITHUB_REF"] == "refs/heads/main"
+          APPLY = os.environ.get("APPLY", "").lower() == "true"
+          TOKEN = os.environ["GH_TOKEN"]
+
+          def api(path, method="GET"):
+              req = Request("https://api.github.com/repos/" + REPO + path,
+                  method=method,
+                  headers={"Authorization": "Bearer " + TOKEN,
+                           "Accept": "application/vnd.github+json",
+                           "X-GitHub-Api-Version": "2022-11-28",
+                           "User-Agent": "mermaid-maintenance"})
+              with urlopen(req, timeout=30) as response:
+                  raw = response.read()
+              return json.loads(raw) if raw else None
+
+          def pages(path, key):
+              result = []
+              for page in range(1, 11):
+                  delim = "&" if "?" in path else "?"
+                  obj = api(path + delim + urlencode({"per_page": 100, "page": page}))
+                  values = obj[key]
+                  result.extend(values)
+                  if len(values) < 100:
+                      return result
+              raise RuntimeError("Too many pages: fail closed")
+
+          artifacts = pages("/actions/artifacts?name=" + NAME, "artifacts")
+          open_prs = pages("/pulls?state=open", None) if False else None
+          # Open-PR listing returns a plain array rather than a keyed object.
+          prs = api("/pulls?state=open&per_page=100")
+          if len(prs) >= 100:
+              raise RuntimeError("PR pagination must be explicit: fail closed")
+          protected_branches = {
+              p["head"]["ref"] for p in prs
+              if p.get("head", {}).get("repo", {}).get("full_name") == REPO
+          }
+          runs = {}
+          for a in artifacts:
+              associated = a.get("workflow_run")
+              if not associated or not associated.get("id"):
+                  raise RuntimeError("Missing run association: fail closed")
+              rid = int(associated["id"])
+              if rid not in runs:
+                  runs[rid] = api("/actions/runs/" + str(rid))
+
+          main_success = sorted(
+              (a for a in artifacts
+               if runs[a["workflow_run"]["id"]].get("event") == "push"
+               and runs[a["workflow_run"]["id"]].get("head_branch") == "main"
+               and runs[a["workflow_run"]["id"]].get("conclusion") == "success"),
+              key=lambda a: a["created_at"], reverse=True)
+          keep_main = {int(a["workflow_run"]["id"]) for a in main_success[:3]}
+          reasons = collections.Counter()
+          to_delete = []
+          for a in artifacts:
+              run_id = int(a["workflow_run"]["id"])
+              run = runs[run_id]
+              created = dt.datetime.fromisoformat(a["created_at"].replace("Z", "+00:00"))
+              if a["name"] != NAME or a.get("expired"):
+                  reasons["wrong_name_or_expired"] += 1
+              elif created >= CUTOFF:
+                  reasons["created_after_freeze"] += 1
+              elif run.get("status") != "completed" or run.get("conclusion") != "success":
+                  reasons["not_successful"] += 1
+              elif run_id in keep_main:
+                  reasons["last_three_main"] += 1
+              elif run.get("event") == "pull_request" and (
+                  not run.get("head_branch") or run["head_branch"] in protected_branches):
+                  reasons["open_or_unknown_pr"] += 1
+              elif run.get("event") not in ("push", "pull_request"):
+                  reasons["unrecognized_event"] += 1
+              else:
+                  to_delete.append(a)
+
+          total = sum(int(a["size_in_bytes"]) for a in to_delete)
+          if len(to_delete) > MAX_DELETE or total > MAX_BYTES:
+              raise RuntimeError("Hard deletion cap exceeded: fail closed")
+          print(json.dumps({
+              "mode": "apply" if APPLY else "dry-run",
+              "candidates": len(to_delete), "candidate_mib": round(total / 1048576, 2),
+              "protected_reasons": dict(reasons),
+              "artifact_ids": [a["id"] for a in to_delete]
+          }, indent=2), flush=True)
+          deleted_bytes = 0
+          for a in to_delete:
+              if APPLY:
+                  api("/actions/artifacts/" + str(a["id"]), method="DELETE")
+                  deleted_bytes += int(a["size_in_bytes"])
+                  print("DELETED id=%s bytes=%s" % (a["id"], a["size_in_bytes"]), flush=True)
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## Mermaid CI workspace cleanup\n\n")
+              summary.write("- Mode: %s\n" % ("APPLY" if APPLY else "DRY RUN"))
+              summary.write("- Candidates: %d\n" % len(to_delete))
+              summary.write("- Candidate MiB: %.2f\n" % (total / 1048576))
+              summary.write("- Deleted MiB: %.2f\n" % (deleted_bytes / 1048576))
+              summary.write("- Protected: %s\n" % dict(reasons))
+          PY
