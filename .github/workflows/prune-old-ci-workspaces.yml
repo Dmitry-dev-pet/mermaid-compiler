@@ -73,14 +73,13 @@ jobs:
               raise RuntimeError("Too many pages: fail closed")
 
           artifacts = pages("/actions/artifacts?name=" + NAME, "artifacts")
-          open_prs = pages("/pulls?state=open", None) if False else None
           # Open-PR listing returns a plain array rather than a keyed object.
           prs = api("/pulls?state=open&per_page=100")
           if len(prs) >= 100:
               raise RuntimeError("PR pagination must be explicit: fail closed")
           protected_branches = {
               p["head"]["ref"] for p in prs
-              if p.get("head", {}).get("repo", {}).get("full_name") == REPO
+              if (p.get("head", {}).get("repo") or {}).get("full_name") == REPO
           }
           runs = {}
           for a in artifacts:
