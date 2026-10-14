@@ -68,13 +68,13 @@ jobs:
         run: node scripts/mobile-viewport-smoke.mjs
 
       - name: Attach production viewport screenshots
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner }}
         uses: actions/upload-artifact@v4
         with:
           name: mermaid-production-mobile-viewports
           path: artifacts/production-mobile-viewport/*.png
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 1
 
       - name: Summarize the acceptance scope
         if: always()
