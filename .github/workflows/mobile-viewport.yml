@@ -40,10 +40,10 @@ jobs:
       - name: Headless viewport and persistence checks
         run: node scripts/mobile-viewport-smoke.mjs
       - name: Attach browser screenshots
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner }}
         uses: actions/upload-artifact@v4
         with:
           name: mermaid-mobile-viewports
           path: artifacts/mobile-viewport/*.png
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 1
