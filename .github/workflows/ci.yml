@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -85,7 +86,8 @@ jobs:
             exit 1
           fi
 
-      - name: Upload local ChatGPT workspace
+      - name: Upload local ChatGPT workspace on explicit manual request
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && success() }}
         uses: actions/upload-artifact@v4
         with:
           name: mermaid-chatgpt-local
